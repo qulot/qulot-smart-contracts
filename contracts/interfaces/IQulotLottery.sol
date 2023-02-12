@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.0;
+pragma solidity ^0.8.9;
 
 interface IQulotLottery {
     /**
      *
-     * @param _variantId Request id combine lotteryProductId and lotterySessionId
-     * @param _ticketNumbers array of ticket numbers
+     * @param _sessionId Request id combine lotteryProductId and lotterySessionId
+     * @param _tickets array of ticket
      * @dev Callable by users
      */
     function buyTickets(
-        string calldata _variantId,
-        uint32[] calldata _ticketNumbers
+        uint256 _sessionId,
+        uint32[][] calldata _tickets
     ) external;
 
-
     /**
-     * 
+     *
      * @param _lotteryProductId Lottery product id
      * @dev Callable by operator
      */

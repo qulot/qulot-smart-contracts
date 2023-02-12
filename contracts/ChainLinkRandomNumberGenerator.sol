@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -17,13 +17,16 @@ contract ChainLinkRandomNumberGenerator is
     struct RequestStatus {
         bool fulfilled; // whether the request has been successfully fulfilled
         bool exists; // whether a requestId exists
-        string variantId;
+        uint256 sessionId;
         uint32 numbersOfItems;
         uint32 minValuePerItems;
         uint32 maxValuePerItems;
         uint32[] results;
     }
 
+    using SafeERC20 for IERC20;
+
+    // Address of Qulot lottery smart contarct
     address private qulotLotteryAddress;
 
     // Corresponds to a particular oracle job which uses
@@ -37,8 +40,8 @@ contract ChainLinkRandomNumberGenerator is
 
     mapping(uint256 => RequestStatus)
         private requests; /* requestId --> requestStatus */
-    mapping(string => RequestStatus)
-        private requestsByVariantId; /* variantId --> requestStatus */
+    mapping(uint256 => RequestStatus)
+        private requestsBySessionId; /* sessionId --> requestStatus */
 
     VRFCoordinatorV2Interface COORDINATOR;
     // ChainLink VRF subscription id
@@ -72,13 +75,13 @@ contract ChainLinkRandomNumberGenerator is
     }
 
     /**
-     * @param _variantId Request id combine lotteryProductId and lotterySessionId
+     * @param _sessionId Request id combine lotteryProductId and lotterySessionId
      * @param _numbersOfItems Number of items
      * @param _minValuePerItems Min value per items
      * @param _maxValuePerItems Max value per items
      */
     function requestRandomNumbers(
-        string calldata _variantId,
+        uint256 _sessionId,
         uint32 _numbersOfItems,
         uint32 _minValuePerItems,
         uint32 _maxValuePerItems
@@ -99,7 +102,7 @@ contract ChainLinkRandomNumberGenerator is
             _numbersOfItems
         );
         requests[requestId] = RequestStatus({
-            variantId: _variantId,
+            sessionId: _sessionId,
             numbersOfItems: _numbersOfItems,
             minValuePerItems: _minValuePerItems,
             maxValuePerItems: _maxValuePerItems,
@@ -107,20 +110,20 @@ contract ChainLinkRandomNumberGenerator is
             fulfilled: false,
             results: new uint32[](_numbersOfItems)
         });
-        requestsByVariantId[_variantId] = requests[requestId];
+        requestsBySessionId[_sessionId] = requests[requestId];
         requestIds.push(requestId);
         latestRequestId = requestId;
     }
 
     /**
-     * @param _variantId Request id combine lotteryProductId and lotterySessionId
+     * @param _sessionId Request id combine lotteryProductId and lotterySessionId
      * @notice View random result
      */
     function getRandomResult(
-        string calldata _variantId
+        uint256 _sessionId
     ) external view override returns (uint32[] memory) {
-        require(requestsByVariantId[_variantId].exists, "Result not found");
-        return requestsByVariantId[_variantId].results;
+        require(requestsBySessionId[_sessionId].exists, "Result not found");
+        return requestsBySessionId[_sessionId].results;
     }
 
     /**
@@ -176,5 +179,15 @@ contract ChainLinkRandomNumberGenerator is
         }
 
         requests[_requestId].fulfilled = true;
+    }
+
+    /**
+     * @notice It allows the admin to withdraw tokens sent to the contract
+     * @param _tokenAddress: the address of the token to withdraw
+     * @param _tokenAmount: the number of token amount to withdraw
+     * @dev Only callable by owner.
+     */
+    function withdrawTokens(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
+        IERC20(_tokenAddress).safeTransfer(address(msg.sender), _tokenAmount);
     }
 }
