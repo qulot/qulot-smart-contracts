@@ -24,10 +24,16 @@ contract ChainLinkRandomNumberGenerator is
         uint32[] results;
     }
 
+    string private constant ERROR_ONLY_QULOT_CONTRACT =
+        "ERROR_ONLY_QULOT_CONTRACT";
+    string private constant ERROR_INVALID_KEY_HASH = "ERROR_INVALID_KEY_HASH";
+    string private constant ERROR_REQUEST_NOT_FOUND = "ERROR_REQUEST_NOT_FOUND";
+    string private constant ERROR_RESULT_NOT_FOUND = "ERROR_RESULT_NOT_FOUND";
+
     using SafeERC20 for IERC20;
 
     // Address of Qulot lottery smart contarct
-    address private qulotLotteryAddress;
+    address public qulotLotteryAddress;
 
     // Corresponds to a particular oracle job which uses
     // that key for generating the VRF proof. Different keyHash's have different gas price
@@ -86,11 +92,8 @@ contract ChainLinkRandomNumberGenerator is
         uint32 _minValuePerItems,
         uint32 _maxValuePerItems
     ) external override {
-        require(
-            msg.sender == qulotLotteryAddress,
-            "Only Qulot Lottery Address"
-        );
-        require(keyHash != bytes32(0), "Must have valid key hash");
+        require(msg.sender == qulotLotteryAddress, ERROR_ONLY_QULOT_CONTRACT);
+        require(keyHash != bytes32(0), ERROR_INVALID_KEY_HASH);
         // require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK tokens");
 
         // Will revert if subscription is not set and funded.
@@ -122,7 +125,7 @@ contract ChainLinkRandomNumberGenerator is
     function getRandomResult(
         uint256 _sessionId
     ) external view override returns (uint32[] memory) {
-        require(requestsBySessionId[_sessionId].exists, "Result not found");
+        require(requestsBySessionId[_sessionId].exists, ERROR_RESULT_NOT_FOUND);
         return requestsBySessionId[_sessionId].results;
     }
 
@@ -167,7 +170,7 @@ contract ChainLinkRandomNumberGenerator is
         uint256 _requestId,
         uint256[] memory _randomWords
     ) internal override {
-        require(requests[_requestId].exists, "request not found");
+        require(requests[_requestId].exists, ERROR_REQUEST_NOT_FOUND);
 
         for (uint i = 0; i < _randomWords.length; i++) {
             // transform the result to a number between min and max inclusively
@@ -187,7 +190,10 @@ contract ChainLinkRandomNumberGenerator is
      * @param _tokenAmount: the number of token amount to withdraw
      * @dev Only callable by owner.
      */
-    function withdrawTokens(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
+    function withdrawTokens(
+        address _tokenAddress,
+        uint256 _tokenAmount
+    ) external onlyOwner {
         IERC20(_tokenAddress).safeTransfer(address(msg.sender), _tokenAmount);
     }
 }
