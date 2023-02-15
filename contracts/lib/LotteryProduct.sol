@@ -2,7 +2,6 @@
 pragma solidity ^0.8.9;
 
 struct LotteryProduct {
-    string productId;
     string verboseName;
     string picture;
     uint32 numberOfItems;
@@ -11,4 +10,5 @@ struct LotteryProduct {
     uint[] periodDays;
     uint periodHourOfDays;
     uint maxNumberTicketsPerBuy;
+    uint256 pricePerTicket;
 }

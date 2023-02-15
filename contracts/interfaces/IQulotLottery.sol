@@ -4,7 +4,8 @@ pragma solidity ^0.8.9;
 interface IQulotLottery {
     /**
      *
-     * @param _sessionId Request id combine lotteryProductId and lotterySessionId
+     * @notice Buy tickets for the current lottery session
+     * @param _sessionId RLottery session id
      * @param _tickets array of ticket
      * @dev Callable by users
      */
@@ -15,8 +16,17 @@ interface IQulotLottery {
 
     /**
      *
-     * @param _lotteryProductId Lottery product id
+     * @notice Start lottery session by id
+     * @param _sessionId Lottery session id
      * @dev Callable by operator
      */
-    function startDrawProduct(string calldata _lotteryProductId) external;
+    function startSession(uint256 _sessionId) external;
+
+    /**
+     *
+     * @notice Close lottery session by id
+     * @param _sessionId Lottery session id
+     * @dev Callable by operator
+     */
+    function closeSession(uint256 _sessionId) external;
 }

@@ -3,14 +3,19 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/IQulotLottery.sol";
+import "./interfaces/IRandomNumberGenerator.sol";
 import "./lib/LotteryProduct.sol";
 import "./lib/LotterySession.sol";
+import "./lib/LotteryTicket.sol";
 import "./lib/Enums.sol";
 
 contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
+    using SafeERC20 for IERC20;
+
     string private constant ERROR_CONTRACT_NOT_ALLOWED =
         "ERROR_CONTRACT_NOT_ALLOWED";
     string private constant ERROR_PROXY_CONTRACT_NOT_ALLOWED =
@@ -23,11 +28,30 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     string private constant ERROR_INVALID_ZERO_ADDRESS =
         "ERROR_INVALID_ZERO_ADDRESS";
 
+    event TicketsPurchase(
+        address indexed buyer,
+        uint256 indexed sessionId,
+        uint256 numberTickets
+    );
+
+    // Mapping productId to product info
     mapping(string => LotteryProduct) public products;
+    // Mapping sessionId to session info
     mapping(uint256 => LotterySession) public sessions;
+    // Mapping ticketId to ticket info
+    mapping(uint256 => LotteryTicket) public tickets;
+    // Keep track of product id for a given productId
+    mapping(uint256 => string) public sessionsByProducts;
+    // Keep track of user ticket ids for a given sessionId
+    mapping(address => mapping(uint256 => uint256[]))
+        public userTicketsPerSessionId;
+    uint256 public currentTicketId;
     // The lottery scheduler account used to run regular operations.
     address public operatorAddress;
     address public treasuryAddress;
+
+    IERC20 public token;
+    mapping(address => IRandomNumberGenerator) public randomGenerators;
 
     modifier notContract() {
         require(!Address.isContract(msg.sender), ERROR_CONTRACT_NOT_ALLOWED);
@@ -38,6 +62,27 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     modifier onlyOperator() {
         require(msg.sender == operatorAddress, ERROR_ONLY_OPERATOR);
         _;
+    }
+
+    /**
+     *
+     * @param _tokenAddress Address of the ERC20 token
+     * @param _randomGeneratorAddress address of the RandomGenerator contract used to work with ChainLink
+     */
+    constructor(
+        address _tokenAddress,
+        address[] memory _randomGeneratorAddress
+    ) {
+        // init ERC20 contract
+        token = IERC20(_tokenAddress);
+
+        // init array randomm generators contract
+        for (uint i = 0; i < _randomGeneratorAddress.length; i++) {
+            address randomAddress = _randomGeneratorAddress[i];
+            randomGenerators[randomAddress] = IRandomNumberGenerator(
+                randomAddress
+            );
+        }
     }
 
     /**
@@ -65,32 +110,65 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         // check limit ticket
         require(
             _tickets.length <=
-                products[sessions[_sessionId].productId].maxNumberTicketsPerBuy,
+                products[sessionsByProducts[_sessionId]].maxNumberTicketsPerBuy,
             ERROR_TICKETS_LIMIT
         );
-        LotterySession memory lotterySession = sessions[_sessionId];
-        LotteryProduct memory lotteryProduct = products[
-            lotterySession.productId
-        ];
+
+        // calculate total price to pay to this contract
+        uint256 amountToTransfer = _caculateTotalPriceForBulkTickets(
+            products[sessionsByProducts[_sessionId]],
+            _tickets.length
+        );
+        // transfer cake tokens to this contract
+        token.safeTransferFrom(
+            address(msg.sender),
+            address(this),
+            amountToTransfer
+        );
+
+        // increment the total amount collected for the lottery session
+        sessions[_sessionId].totalAmount += amountToTransfer;
 
         for (uint i = 0; i < _tickets.length; i++) {
+            uint32[] memory ticketNumbers = _tickets[i];
             require(
-                _isValidTicketNumbers(lotteryProduct, _tickets[i]),
+                _isValidTicketNumbers(
+                    products[sessionsByProducts[_sessionId]],
+                    ticketNumbers
+                ),
                 ERROR_INVALID_TICKET
             );
-
-            
+            tickets[currentTicketId] = LotteryTicket({
+                numbers: ticketNumbers,
+                owner: msg.sender
+            });
+            userTicketsPerSessionId[msg.sender][_sessionId].push(
+                currentTicketId
+            );
+            // Increase lottery ticket number
+            currentTicketId++;
         }
+
+        emit TicketsPurchase(msg.sender, _sessionId, _tickets.length);
     }
 
     /**
      *
-     * @param _lotteryProductId Lottery product id
+     * @notice Start lottery session by id
+     * @param _sessionId Lottery session id
      * @dev Callable by operator
      */
-    function startDrawProduct(
-        string calldata _lotteryProductId
-    ) external override onlyOperator {}
+    function startSession(uint256 _sessionId) external override onlyOperator {
+        
+    }
+
+    /**
+     *
+     * @notice Close lottery session by id
+     * @param _sessionId Lottery session id
+     * @dev Callable by operator
+     */
+    function closeSession(uint256 _sessionId) external override onlyOperator {}
 
     /**
      *
@@ -134,5 +212,17 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             }
         }
         return true;
+    }
+
+    /**
+     * @notice Calcuate final price for bulk of tickets
+     * @param _lotteryProduct Products that users want to buy tickets
+     * @param _numberTickets Number of tickts want to by
+     */
+    function _caculateTotalPriceForBulkTickets(
+        LotteryProduct memory _lotteryProduct,
+        uint256 _numberTickets
+    ) internal pure returns (uint256) {
+        return _lotteryProduct.pricePerTicket * _numberTickets;
     }
 }
