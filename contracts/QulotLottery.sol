@@ -16,6 +16,7 @@ import "./lib/Enums.sol";
 contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     using SafeERC20 for IERC20;
 
+    /* #region Constants */
     string private constant ERROR_CONTRACT_NOT_ALLOWED =
         "ERROR_CONTRACT_NOT_ALLOWED";
     string private constant ERROR_PROXY_CONTRACT_NOT_ALLOWED =
@@ -27,13 +28,24 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     string private constant ERROR_INVALID_TICKET = "ERROR_INVALID_TICKET";
     string private constant ERROR_INVALID_ZERO_ADDRESS =
         "ERROR_INVALID_ZERO_ADDRESS";
+    /* #endregion */
 
+    /* #region Events */
     event TicketsPurchase(
         address indexed buyer,
         uint256 indexed sessionId,
         uint256 numberTickets
     );
+    event TicketsClam(
+        address indexed claimer,
+        uint256 indexed sessionId,
+        uint256 amount
+    );
+    event SessionOpen(uint256 indexed sessionId, uint256 startTime);
+    event SessionClose(uint256 indexed sessionId, uint256 endTime);
+    /* #endregion */
 
+    /* #region States */
     // Mapping productId to product info
     mapping(string => LotteryProduct) public products;
     // Mapping sessionId to session info
@@ -45,6 +57,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     // Keep track of user ticket ids for a given sessionId
     mapping(address => mapping(uint256 => uint256[]))
         public userTicketsPerSessionId;
+    uint256 public currentSessionId;
     uint256 public currentTicketId;
     // The lottery scheduler account used to run regular operations.
     address public operatorAddress;
@@ -52,7 +65,9 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
 
     IERC20 public token;
     mapping(address => IRandomNumberGenerator) public randomGenerators;
+    /* #endregion */
 
+    /* #region Modifiers */
     modifier notContract() {
         require(!Address.isContract(msg.sender), ERROR_CONTRACT_NOT_ALLOWED);
         require(msg.sender == tx.origin, ERROR_PROXY_CONTRACT_NOT_ALLOWED);
@@ -63,9 +78,12 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         require(msg.sender == operatorAddress, ERROR_ONLY_OPERATOR);
         _;
     }
+    /* #endregion */
 
+    /* #region Constructor */
     /**
      *
+     * @notice Constructor
      * @param _tokenAddress Address of the ERC20 token
      * @param _randomGeneratorAddress address of the RandomGenerator contract used to work with ChainLink
      */
@@ -84,7 +102,9 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             );
         }
     }
+    /* #endregion */
 
+    /* #region Methods */
     /**
      *
      * @param _sessionId Request id combine lotteryProductId and lotterySessionId
@@ -159,7 +179,9 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @dev Callable by operator
      */
     function startSession(uint256 _sessionId) external override onlyOperator {
-        
+        currentSessionId++;
+
+        emit SessionOpen(currentSessionId, block.timestamp);
     }
 
     /**
@@ -225,4 +247,6 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     ) internal pure returns (uint256) {
         return _lotteryProduct.pricePerTicket * _numberTickets;
     }
+
+    /* #endregion */
 }
