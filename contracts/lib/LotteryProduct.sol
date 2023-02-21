@@ -11,4 +11,5 @@ struct LotteryProduct {
     uint periodHourOfDays;
     uint maxNumberTicketsPerBuy;
     uint256 pricePerTicket;
+    uint32 treasuryFeePercent;
 }

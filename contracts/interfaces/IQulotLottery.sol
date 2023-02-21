@@ -17,16 +17,8 @@ interface IQulotLottery {
     /**
      *
      * @notice Start lottery session by id
-     * @param _sessionId Lottery session id
+     * @param _productId Lottery product id
      * @dev Callable by operator
      */
-    function startSession(uint256 _sessionId) external;
-
-    /**
-     *
-     * @notice Close lottery session by id
-     * @param _sessionId Lottery session id
-     * @dev Callable by operator
-     */
-    function closeSession(uint256 _sessionId) external;
+    function draw(string calldata _productId) external;
 }

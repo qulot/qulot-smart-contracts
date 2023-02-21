@@ -28,6 +28,12 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     string private constant ERROR_INVALID_TICKET = "ERROR_INVALID_TICKET";
     string private constant ERROR_INVALID_ZERO_ADDRESS =
         "ERROR_INVALID_ZERO_ADDRESS";
+    string private constant ERROR_NOT_TIME_DRAW_LOTTERY =
+        "ERROR_NOT_TIME_DRAW_LOTTERY";
+    string private constant ERROR_NOT_TIME_OPEN_LOTTERY =
+        "ERROR_NOT_TIME_OPEN_LOTTERY";
+    string private constant ERROR_NOT_TIME_ClOSE_LOTTERY =
+        "ERROR_NOT_TIME_ClOSE_LOTTERY";
     /* #endregion */
 
     /* #region Events */
@@ -43,6 +49,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     );
     event SessionOpen(uint256 indexed sessionId, uint256 startTime);
     event SessionClose(uint256 indexed sessionId, uint256 endTime);
+    event SessionClaimable(uint256 indexed sessionId, uint32[] numbers);
     /* #endregion */
 
     /* #region States */
@@ -54,17 +61,18 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     mapping(uint256 => LotteryTicket) public tickets;
     // Keep track of product id for a given productId
     mapping(uint256 => string) public sessionsByProducts;
+    mapping(string => uint256) public currentSessionIdByProduct;
     // Keep track of user ticket ids for a given sessionId
     mapping(address => mapping(uint256 => uint256[]))
         public userTicketsPerSessionId;
-    uint256 public currentSessionId;
+    uint256 incrementSessionId;
     uint256 public currentTicketId;
     // The lottery scheduler account used to run regular operations.
     address public operatorAddress;
     address public treasuryAddress;
 
     IERC20 public token;
-    mapping(address => IRandomNumberGenerator) public randomGenerators;
+    IRandomNumberGenerator public randomGenerator;
     /* #endregion */
 
     /* #region Modifiers */
@@ -78,6 +86,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         require(msg.sender == operatorAddress, ERROR_ONLY_OPERATOR);
         _;
     }
+
     /* #endregion */
 
     /* #region Constructor */
@@ -87,21 +96,14 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @param _tokenAddress Address of the ERC20 token
      * @param _randomGeneratorAddress address of the RandomGenerator contract used to work with ChainLink
      */
-    constructor(
-        address _tokenAddress,
-        address[] memory _randomGeneratorAddress
-    ) {
+    constructor(address _tokenAddress, address _randomGeneratorAddress) {
         // init ERC20 contract
         token = IERC20(_tokenAddress);
 
-        // init array randomm generators contract
-        for (uint i = 0; i < _randomGeneratorAddress.length; i++) {
-            address randomAddress = _randomGeneratorAddress[i];
-            randomGenerators[randomAddress] = IRandomNumberGenerator(
-                randomAddress
-            );
-        }
+        // init randomm generators contract
+        randomGenerator = IRandomNumberGenerator(_randomGeneratorAddress);
     }
+
     /* #endregion */
 
     /* #region Methods */
@@ -165,7 +167,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             userTicketsPerSessionId[msg.sender][_sessionId].push(
                 currentTicketId
             );
-            // Increase lottery ticket number
+            // Increment lottery ticket number
             currentTicketId++;
         }
 
@@ -174,23 +176,98 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
 
     /**
      *
-     * @notice Start lottery session by id
-     * @param _sessionId Lottery session id
-     * @dev Callable by operator
+     * @param _productId Lottery product id
+     * @param _drawDateTime New session draw datetime (UTC)
      */
-    function startSession(uint256 _sessionId) external override onlyOperator {
-        currentSessionId++;
+    function open(
+        string calldata _productId,
+        uint256 _drawDateTime
+    ) internal onlyOwner {
+        require(
+            (currentSessionIdByProduct[_productId] == 0) ||
+                (sessions[currentSessionIdByProduct[_productId]].status ==
+                    SessionStatus.Close),
+            ERROR_NOT_TIME_ClOSE_LOTTERY
+        );
 
-        emit SessionOpen(currentSessionId, block.timestamp);
+        // Increment current session id of lottery product to one
+        incrementSessionId++;
+        currentSessionIdByProduct[_productId] = incrementSessionId;
+
+        // Create new session
+        sessions[currentSessionIdByProduct[_productId]] = LotterySession({
+            winningNumbers: new uint32[](products[_productId].numberOfItems),
+            drawDateTime: _drawDateTime,
+            openTime: block.timestamp,
+            totalAmount: 0,
+            status: SessionStatus.Open
+        });
+
+        // Emit session open
+        emit SessionOpen(
+            currentSessionIdByProduct[_productId],
+            block.timestamp
+        );
     }
 
     /**
      *
-     * @notice Close lottery session by id
-     * @param _sessionId Lottery session id
+     * @param _productId Lottery product id
+     */
+    function close(string calldata _productId) internal onlyOwner {
+        require(
+            (currentSessionIdByProduct[_productId] == 0) ||
+                (sessions[currentSessionIdByProduct[_productId]].status ==
+                    SessionStatus.Open),
+            ERROR_NOT_TIME_ClOSE_LOTTERY
+        );
+
+        sessions[currentSessionIdByProduct[_productId]].status = SessionStatus
+            .Close;
+
+        // Request new random number
+        randomGenerator.requestRandomNumbers(
+            currentSessionIdByProduct[_productId],
+            products[_productId].numberOfItems,
+            products[_productId].minValuePerItem,
+            products[_productId].maxValuePerItem
+        );
+
+        // Emit session close
+        emit SessionClose(
+            currentSessionIdByProduct[_productId],
+            block.timestamp
+        );
+    }
+
+    /**
+     *
+     * @notice Start lottery session by id
+     * @param _productId Lottery session id
      * @dev Callable by operator
      */
-    function closeSession(uint256 _sessionId) external override onlyOperator {}
+    function draw(string calldata _productId) external override onlyOperator {
+        require(
+            (currentSessionIdByProduct[_productId] == 0) ||
+                (sessions[currentSessionIdByProduct[_productId]].status ==
+                    SessionStatus.Close),
+            ERROR_NOT_TIME_DRAW_LOTTERY
+        );
+
+        // get randomResult generated by ChainLink's fallback
+        uint32[] memory winningNumbers = randomGenerator.getRandomResult(
+            currentSessionIdByProduct[_productId]
+        );
+
+        sessions[currentSessionIdByProduct[_productId]].status = SessionStatus
+            .Claimable;
+
+        // Emit session claimable
+        emit SessionClaimable(
+            currentSessionIdByProduct[_productId],
+            winningNumbers
+        );
+    }
 
     /**
      *
