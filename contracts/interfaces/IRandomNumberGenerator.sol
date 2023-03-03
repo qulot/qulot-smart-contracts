@@ -3,7 +3,7 @@ pragma solidity ^0.8.9;
 
 interface IRandomNumberGenerator {
     /**
-     * 
+     *
      * @param _sessionId Request id combine lotteryProductId and lotterySessionId
      * @param _numbersOfItems Numbers of items
      * @param _minValuePerItems Min value per items
@@ -19,5 +19,13 @@ interface IRandomNumberGenerator {
     /**
      * @param _sessionId Request id combine lotteryProductId and lotterySessionId
      */
-    function getRandomResult(uint256 _sessionId) external view returns (uint32[] memory);
+    function getRandomResult(
+        uint256 _sessionId
+    ) external view returns (uint32[] memory);
+
+    /**
+     * @notice Set the address for the Qulot
+     * @param _qulotLottery: address of the Qulot lottery
+     */
+    function setLotteryAddress(address _qulotLottery) external;
 }
