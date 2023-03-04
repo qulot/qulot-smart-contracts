@@ -28,5 +28,5 @@ jobs:
       - name: "Compile the contracts and generate the TypeChain bindings"
         run: "yarn typechain"
 
-      - name: "Test the contracts and generate the coverage report"
-        run: "yarn test:coverage"
+      - name: "Test the contracts"
+        run: "yarn test"
