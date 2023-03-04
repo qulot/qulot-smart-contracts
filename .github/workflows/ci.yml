@@ -19,11 +19,14 @@ jobs:
       - name: "Install Node.js"
         uses: "actions/setup-node@v3"
         with:
-          cache: "npm"
+          cache: "yarn"
           node-version: "lts/*"
 
       - name: "Install the dependencies"
-        run: "npm install"
+        run: "yarn install --immutable"
 
-      - name: "Test the contracts"
-        run: "npm test"
+      - name: "Compile the contracts and generate the TypeChain bindings"
+        run: "yarn typechain"
+
+      - name: "Test the contracts and generate the coverage report"
+        run: "yarn test:coverage"
