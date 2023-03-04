@@ -25,8 +25,8 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: yarn --ignore-scripts
-      shell: bash
-    - name: Run Tests
-      run: yarn hardhat test
+        cache: 'yarn'
+    - name: Install
+      run: yarn install
+    - name: Run tests
+      run: yarn test
