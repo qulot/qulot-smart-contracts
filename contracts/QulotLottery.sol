@@ -8,11 +8,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/IQulotLottery.sol";
 import "./interfaces/IRandomNumberGenerator.sol";
-import "./lib/Lottery.sol";
-import "./lib/Round.sol";
-import "./lib/Ticket.sol";
-import "./lib/Rule.sol";
-import "./lib/Enums.sol";
+import "./lib/QulotEnums.sol";
+import "./lib/QulotStructs.sol";
 
 contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     using SafeERC20 for IERC20;
@@ -104,7 +101,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     mapping(address => mapping(uint256 => uint256[]))
         public userTicketsPerRoundId;
 
-    mapping(string => Rule[]) rulesPerLotteryId;
+    mapping(string => Rule[]) public rulesPerLotteryId;
 
     // The lottery scheduler account used to run regular operations.
     address public operatorAddress;

@@ -306,6 +306,38 @@ describe("QulotLottery", function () {
             )
         ).to.be.revertedWith("ERROR_LOTTERY_ALREADY_EXISTS");
       });
+
+      it("Will match all if adding new lottery is successful", async function () {
+        const { qulotLottery, operatorAccount } = await loadFixture(
+          deployQulotLotteryFixture
+        );
+
+        // Register new lottery first
+        await qulotLottery
+          .connect(operatorAccount)
+          .addLottery(
+            "liteq",
+            "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+            "LiteQ",
+            "3",
+            "1",
+            "66",
+            ["1", "2", "3", "4", "5", "6"],
+            "24",
+            "10000",
+            parseEther("1"),
+            "10"
+          );
+
+        // Register new lottery again, Expect error lottery already exists
+        const liteq = await qulotLottery.lotteries("liteq");
+        await expect(liteq).to.be.an("array").that.includes("LiteQ");
+        expect(liteq)
+          .to.be.an("array")
+          .that.includes(
+            "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png"
+          );
+      });
     });
 
     describe("Events", function () {
@@ -387,5 +419,21 @@ describe("QulotLottery", function () {
         ).to.be.revertedWith("ERROR_ONLY_OPERATOR");
       });
     });
+
+    describe("Data", function () {
+      it("Will match all if adding new rule is successful", async function () {
+        const { qulotLottery, operatorAccount, otherAccount } =
+          await loadFixture(deployQulotLotteryFixture);
+        await qulotLottery
+          .connect(operatorAccount)
+          .addRule("liteq", "1", "0", "50");
+        var newRule = await qulotLottery.rulesPerLotteryId("liteq", 0);
+
+        expect(newRule).to.be.an("array").includes(1);
+        expect(newRule).to.be.an("array").includes(0);
+      });
+    });
   });
+
+  
 });

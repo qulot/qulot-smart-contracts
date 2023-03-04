@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import {RewardUnit} from "../lib/Enums.sol";
+import {RewardUnit} from "../lib/QulotEnums.sol";
 
 interface IQulotLottery {
     /**

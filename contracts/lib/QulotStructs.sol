@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import {RoundStatus, RewardUnit} from "./QulotEnums.sol";
+
 struct Lottery {
     string verboseName;
     string picture;
@@ -14,4 +16,23 @@ struct Lottery {
     uint32 treasuryFeePercent;
     uint256 totalPrize;
     uint256 totalTickets;
+}
+
+struct Round {
+    uint32[] winningNumbers;
+    uint256 drawDateTime;
+    uint256 openTime;
+    uint256 totalAmount;
+    RoundStatus status;
+}
+
+struct Rule {
+    uint32 matchNumber;
+    RewardUnit rewardUnit;
+    uint256 rewardValue;
+}
+
+struct Ticket {
+    uint32[] numbers;
+    address owner;
 }
