@@ -5,9 +5,9 @@ name: CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   ci:
@@ -24,6 +24,9 @@ jobs:
 
       - name: "Install the dependencies"
         run: "yarn install --immutable"
+
+      - name: "Lint the code"
+        run: "yarn lint"
 
       - name: "Compile the contracts and generate the TypeChain bindings"
         run: "yarn typechain"

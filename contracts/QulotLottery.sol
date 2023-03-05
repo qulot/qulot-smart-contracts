@@ -1,80 +1,52 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "./interfaces/IQulotLottery.sol";
-import "./interfaces/IRandomNumberGenerator.sol";
-import "./lib/QulotEnums.sol";
-import "./lib/QulotStructs.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
+import { IQulotLottery } from "./interfaces/IQulotLottery.sol";
+import { IRandomNumberGenerator } from "./interfaces/IRandomNumberGenerator.sol";
+import { RoundStatus, RewardUnit } from "./lib/QulotEnums.sol";
+import { Lottery, Round, Ticket, Rule } from "./lib/QulotStructs.sol";
 
 contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     using SafeERC20 for IERC20;
 
     /* #region Constants */
-    string private constant ERROR_CONTRACT_NOT_ALLOWED =
-        "ERROR_CONTRACT_NOT_ALLOWED";
-    string private constant ERROR_PROXY_CONTRACT_NOT_ALLOWED =
-        "ERROR_PROXY_CONTRACT_NOT_ALLOWED";
+    string private constant ERROR_CONTRACT_NOT_ALLOWED = "ERROR_CONTRACT_NOT_ALLOWED";
+    string private constant ERROR_PROXY_CONTRACT_NOT_ALLOWED = "ERROR_PROXY_CONTRACT_NOT_ALLOWED";
     string private constant ERROR_ONLY_OPERATOR = "ERROR_ONLY_OPERATOR";
     string private constant ERROR_SESSION_IS_CLOSED = "ERROR_SESSION_IS_CLOSED";
     string private constant ERROR_TICKETS_LIMIT = "ERROR_TICKETS_LIMIT";
     string private constant ERROR_TICKETS_EMPTY = "ERROR_TICKETS_EMPTY";
     string private constant ERROR_INVALID_TICKET = "ERROR_INVALID_TICKET";
-    string private constant ERROR_INVALID_ZERO_ADDRESS =
-        "ERROR_INVALID_ZERO_ADDRESS";
-    string private constant ERROR_NOT_TIME_DRAW_LOTTERY =
-        "ERROR_NOT_TIME_DRAW_LOTTERY";
-    string private constant ERROR_NOT_TIME_OPEN_LOTTERY =
-        "ERROR_NOT_TIME_OPEN_LOTTERY";
-    string private constant ERROR_NOT_TIME_ClOSE_LOTTERY =
-        "ERROR_NOT_TIME_ClOSE_LOTTERY";
-    string private constant ERROR_INVALID_WINNING_NUMBERS =
-        "ERROR_INVALID_WINNING_NUMBERS";
-    string private constant ERROR_INVALID_LOTTERY_ID =
-        "ERROR_INVALID_LOTTERY_ID";
-    string private constant ERROR_INVALID_LOTTERY_VERBOSE_NAME =
-        "ERROR_INVALID_LOTTERY_VERBOSE_NAME";
-    string private constant ERROR_INVALID_LOTTERY_PICTURE =
-        "ERROR_INVALID_LOTTERY_PICTURE";
-    string private constant ERROR_INVALID_LOTTERY_NUMBER_OF_ITEMS =
-        "ERROR_INVALID_LOTTERY_NUMBER_OF_ITEMS";
-    string private constant ERROR_INVALID_LOTTERY_MIN_VALUE_PER_ITEMS =
-        "ERROR_INVALID_LOTTERY_MIN_VALUE_PER_ITEMS";
-    string private constant ERROR_INVALID_LOTTERY_MAX_VALUE_PER_ITEMS =
-        "ERROR_INVALID_LOTTERY_MAX_VALUE_PER_ITEMS";
-    string private constant ERROR_INVALID_LOTTERY_PERIOD_DAYS =
-        "ERROR_INVALID_LOTTERY_PERIOD_DAYS";
-    string private constant ERROR_INVALID_LOTTERY_PERIOD_HOUR_OF_DAYS =
-        "ERROR_INVALID_LOTTERY_PERIOD_HOUR_OF_DAYS";
+    string private constant ERROR_INVALID_ZERO_ADDRESS = "ERROR_INVALID_ZERO_ADDRESS";
+    string private constant ERROR_NOT_TIME_DRAW_LOTTERY = "ERROR_NOT_TIME_DRAW_LOTTERY";
+    string private constant ERROR_NOT_TIME_OPEN_LOTTERY = "ERROR_NOT_TIME_OPEN_LOTTERY";
+    string private constant ERROR_NOT_TIME_CLOSE_LOTTERY = "ERROR_NOT_TIME_CLOSE_LOTTERY";
+    string private constant ERROR_INVALID_WINNING_NUMBERS = "ERROR_INVALID_WINNING_NUMBERS";
+    string private constant ERROR_INVALID_LOTTERY_ID = "ERROR_INVALID_LOTTERY_ID";
+    string private constant ERROR_INVALID_LOTTERY_VERBOSE_NAME = "ERROR_INVALID_LOTTERY_VERBOSE_NAME";
+    string private constant ERROR_INVALID_LOTTERY_PICTURE = "ERROR_INVALID_LOTTERY_PICTURE";
+    string private constant ERROR_INVALID_LOTTERY_NUMBER_OF_ITEMS = "ERROR_INVALID_LOTTERY_NUMBER_OF_ITEMS";
+    string private constant ERROR_INVALID_LOTTERY_MIN_VALUE_PER_ITEMS = "ERROR_INVALID_LOTTERY_MIN_VALUE_PER_ITEMS";
+    string private constant ERROR_INVALID_LOTTERY_MAX_VALUE_PER_ITEMS = "ERROR_INVALID_LOTTERY_MAX_VALUE_PER_ITEMS";
+    string private constant ERROR_INVALID_LOTTERY_PERIOD_DAYS = "ERROR_INVALID_LOTTERY_PERIOD_DAYS";
+    string private constant ERROR_INVALID_LOTTERY_PERIOD_HOUR_OF_DAYS = "ERROR_INVALID_LOTTERY_PERIOD_HOUR_OF_DAYS";
     string private constant ERROR_INVALID_LOTTERY_MAX_NUMBER_TICKETS_PER_BUY =
         "ERROR_INVALID_LOTTERY_MAX_NUMBER_TICKETS_PER_BUY";
-    string private constant ERROR_INVALID_LOTTERY_PRICE_PER_TICKET =
-        "ERROR_INVALID_LOTTERY_PRICE_PER_TICKET";
-    string private constant ERROR_INVALID_LOTTERY_TREASURY_FEE_PERCENT =
-        "ERROR_INVALID_LOTTERY_TREASURY_FEE_PERCENT";
-    string private constant ERROR_LOTTERY_ALREADY_EXISTS =
-        "ERROR_LOTTERY_ALREADY_EXISTS";
-    string private constant ERROR_INVALID_RULE_REWARD_VALUE =
-        "ERROR_INVALID_RULE_REWARD_VALUE";
-    string private constant ERROR_INVALID_RULE_MATCH_NUMBER =
-        "ERROR_INVALID_RULE_MATCH_NUMBER";
+    string private constant ERROR_INVALID_LOTTERY_PRICE_PER_TICKET = "ERROR_INVALID_LOTTERY_PRICE_PER_TICKET";
+    string private constant ERROR_INVALID_LOTTERY_TREASURY_FEE_PERCENT = "ERROR_INVALID_LOTTERY_TREASURY_FEE_PERCENT";
+    string private constant ERROR_LOTTERY_ALREADY_EXISTS = "ERROR_LOTTERY_ALREADY_EXISTS";
+    string private constant ERROR_INVALID_RULE_REWARD_VALUE = "ERROR_INVALID_RULE_REWARD_VALUE";
+    string private constant ERROR_INVALID_RULE_MATCH_NUMBER = "ERROR_INVALID_RULE_MATCH_NUMBER";
     /* #endregion */
 
     /* #region Events */
-    event TicketsPurchase(
-        address indexed buyer,
-        uint256 indexed roundId,
-        uint256 numberTickets
-    );
-    event TicketsClam(
-        address indexed claimer,
-        uint256 indexed roundId,
-        uint256 amount
-    );
+    event TicketsPurchase(address indexed buyer, uint256 indexed roundId, uint256 numberTickets);
+    event TicketsClam(address indexed claimer, uint256 indexed roundId, uint256 amount);
     event NewLottery(string indexed lotteryId, string verboseName);
     event RoundOpen(uint256 indexed roundId, uint256 startTime);
     event RoundClose(uint256 indexed roundId, uint256 endTime);
@@ -98,8 +70,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     mapping(string => uint256) public currentRoundIdPerLottery;
 
     // Keep track of user ticket ids for a given roundId
-    mapping(address => mapping(uint256 => uint256[]))
-        public userTicketsPerRoundId;
+    mapping(address => mapping(uint256 => uint256[])) public userTicketsPerRoundId;
 
     mapping(string => Rule[]) public rulesPerLotteryId;
 
@@ -110,16 +81,18 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     IERC20 public token;
     IRandomNumberGenerator public randomGenerator;
 
-    uint256 incrementRoundId;
-    uint256 currentTicketId;
+    uint256 private incrementRoundId;
+    uint256 private currentTicketId;
     /* #endregion */
 
     /* #region Modifiers */
+    /* solhint-disable avoid-tx-origin */
     modifier notContract() {
         require(!Address.isContract(msg.sender), ERROR_CONTRACT_NOT_ALLOWED);
         require(msg.sender == tx.origin, ERROR_PROXY_CONTRACT_NOT_ALLOWED);
         _;
     }
+    /* solhint-enable */
 
     modifier onlyOperator() {
         require(msg.sender == operatorAddress, ERROR_ONLY_OPERATOR);
@@ -178,42 +151,20 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     ) external override onlyOperator {
         require(bytes(_lotteryId).length > 0, ERROR_INVALID_LOTTERY_ID);
         require(bytes(_picture).length > 0, ERROR_INVALID_LOTTERY_PICTURE);
-        require(
-            bytes(_verboseName).length > 0,
-            ERROR_INVALID_LOTTERY_VERBOSE_NAME
-        );
+        require(bytes(_verboseName).length > 0, ERROR_INVALID_LOTTERY_VERBOSE_NAME);
         require(_numberOfItems > 0, ERROR_INVALID_LOTTERY_NUMBER_OF_ITEMS);
-        require(
-            _minValuePerItem > 0,
-            ERROR_INVALID_LOTTERY_MIN_VALUE_PER_ITEMS
-        );
-        require(
-            _maxValuePerItem > 0 && _maxValuePerItem < type(uint32).max,
-            ERROR_INVALID_LOTTERY_MAX_VALUE_PER_ITEMS
-        );
+        require(_minValuePerItem > 0, ERROR_INVALID_LOTTERY_MIN_VALUE_PER_ITEMS);
+        require(_maxValuePerItem > 0 && _maxValuePerItem < type(uint32).max, ERROR_INVALID_LOTTERY_MAX_VALUE_PER_ITEMS);
         require(_periodDays.length > 0, ERROR_INVALID_LOTTERY_PERIOD_DAYS);
+        require(_periodHourOfDays > 0 && _periodHourOfDays <= 24, ERROR_INVALID_LOTTERY_PERIOD_HOUR_OF_DAYS);
         require(
-            _periodHourOfDays > 0 && _periodHourOfDays <= 24,
-            ERROR_INVALID_LOTTERY_PERIOD_HOUR_OF_DAYS
-        );
-        require(
-            _maxNumberTicketsPerBuy > 0 &&
-                _maxNumberTicketsPerBuy < type(uint32).max,
+            _maxNumberTicketsPerBuy > 0 && _maxNumberTicketsPerBuy < type(uint32).max,
             ERROR_INVALID_LOTTERY_MAX_NUMBER_TICKETS_PER_BUY
         );
         require(_pricePerTicket > 0, ERROR_INVALID_LOTTERY_PRICE_PER_TICKET);
-        require(
-            _treasuryFeePercent >= 0,
-            ERROR_INVALID_LOTTERY_TREASURY_FEE_PERCENT
-        );
+        require(_treasuryFeePercent >= 0, ERROR_INVALID_LOTTERY_TREASURY_FEE_PERCENT);
 
-        require(
-            !_compareTwoStrings(
-                lotteries[_lotteryId].verboseName,
-                _verboseName
-            ),
-            ERROR_LOTTERY_ALREADY_EXISTS
-        );
+        require(!_compareTwoStrings(lotteries[_lotteryId].verboseName, _verboseName), ERROR_LOTTERY_ALREADY_EXISTS);
 
         lotteries[_lotteryId] = Lottery({
             verboseName: _verboseName,
@@ -252,11 +203,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         require(rewardValue > 0, ERROR_INVALID_RULE_REWARD_VALUE);
 
         rulesPerLotteryId[_lotteryId].push(
-            Rule({
-                matchNumber: matchNumber,
-                rewardUnit: rewardUnit,
-                rewardValue: rewardValue
-            })
+            Rule({ matchNumber: matchNumber, rewardUnit: rewardUnit, rewardValue: rewardValue })
         );
     }
 
@@ -266,28 +213,15 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @param _tickets Array of ticket
      * @dev Callable by users
      */
-    function buyTickets(
-        uint256 _roundId,
-        uint32[][] calldata _tickets
-    ) external override notContract nonReentrant {
+    function buyTickets(uint256 _roundId, uint32[][] calldata _tickets) external override notContract nonReentrant {
         // check list tickets is empty
         require(_tickets.length != 0, ERROR_TICKETS_EMPTY);
         // check session is open
-        require(
-            rounds[_roundId].status != RoundStatus.Open,
-            ERROR_SESSION_IS_CLOSED
-        );
+        require(rounds[_roundId].status != RoundStatus.Open, ERROR_SESSION_IS_CLOSED);
         // check session too late
-        require(
-            block.timestamp < rounds[_roundId].drawDateTime,
-            ERROR_SESSION_IS_CLOSED
-        );
+        require(block.timestamp < rounds[_roundId].drawDateTime, ERROR_SESSION_IS_CLOSED);
         // check limit ticket
-        require(
-            _tickets.length <=
-                lotteries[roundsPerLotteryId[_roundId]].maxNumberTicketsPerBuy,
-            ERROR_TICKETS_LIMIT
-        );
+        require(_tickets.length <= lotteries[roundsPerLotteryId[_roundId]].maxNumberTicketsPerBuy, ERROR_TICKETS_LIMIT);
 
         // calculate total price to pay to this contract
         uint256 amountToTransfer = _caculateTotalPriceForBulkTickets(
@@ -295,11 +229,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             _tickets.length
         );
         // transfer cake tokens to this contract
-        token.safeTransferFrom(
-            address(msg.sender),
-            address(this),
-            amountToTransfer
-        );
+        token.safeTransferFrom(address(msg.sender), address(this), amountToTransfer);
 
         // increment the total amount collected for the round
         rounds[_roundId].totalAmount += amountToTransfer;
@@ -308,17 +238,8 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
 
         for (uint i = 0; i < _tickets.length; i++) {
             uint32[] memory ticketNumbers = _tickets[i];
-            require(
-                _isValidNumbers(
-                    ticketNumbers,
-                    lotteries[roundsPerLotteryId[_roundId]]
-                ),
-                ERROR_INVALID_TICKET
-            );
-            tickets[currentTicketId] = Ticket({
-                numbers: ticketNumbers,
-                owner: msg.sender
-            });
+            require(_isValidNumbers(ticketNumbers, lotteries[roundsPerLotteryId[_roundId]]), ERROR_INVALID_TICKET);
+            tickets[currentTicketId] = Ticket({ numbers: ticketNumbers, owner: msg.sender });
             userTicketsPerRoundId[msg.sender][_roundId].push(currentTicketId);
             // Increment lottery ticket number
             currentTicketId++;
@@ -332,15 +253,11 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @param _lotteryId lottery id
      * @param _drawDateTime New session draw datetime (UTC)
      */
-    function open(
-        string calldata _lotteryId,
-        uint256 _drawDateTime
-    ) external override onlyOperator {
+    function open(string calldata _lotteryId, uint256 _drawDateTime) external override onlyOperator {
         require(
             (currentRoundIdPerLottery[_lotteryId] == 0) ||
-                (rounds[currentRoundIdPerLottery[_lotteryId]].status ==
-                    RoundStatus.Close),
-            ERROR_NOT_TIME_ClOSE_LOTTERY
+                (rounds[currentRoundIdPerLottery[_lotteryId]].status == RoundStatus.Close),
+            ERROR_NOT_TIME_CLOSE_LOTTERY
         );
 
         // Increment current session id of lottery to one
@@ -367,9 +284,8 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     function close(string calldata _lotteryId) external override onlyOperator {
         require(
             (currentRoundIdPerLottery[_lotteryId] == 0) ||
-                (rounds[currentRoundIdPerLottery[_lotteryId]].status ==
-                    RoundStatus.Open),
-            ERROR_NOT_TIME_ClOSE_LOTTERY
+                (rounds[currentRoundIdPerLottery[_lotteryId]].status == RoundStatus.Open),
+            ERROR_NOT_TIME_CLOSE_LOTTERY
         );
 
         rounds[currentRoundIdPerLottery[_lotteryId]].status = RoundStatus.Close;
@@ -395,32 +311,21 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     function draw(string calldata _lotteryId) external override onlyOperator {
         require(
             (currentRoundIdPerLottery[_lotteryId] == 0) ||
-                (rounds[currentRoundIdPerLottery[_lotteryId]].status ==
-                    RoundStatus.Close),
+                (rounds[currentRoundIdPerLottery[_lotteryId]].status == RoundStatus.Close),
             ERROR_NOT_TIME_DRAW_LOTTERY
         );
 
         // get randomResult generated by ChainLink's fallback
-        uint32[] memory winningNumbers = randomGenerator.getRandomResult(
-            currentRoundIdPerLottery[_lotteryId]
-        );
+        uint32[] memory winningNumbers = randomGenerator.getRandomResult(currentRoundIdPerLottery[_lotteryId]);
 
         // check winning numbers is valid or not
-        require(
-            _isValidNumbers(winningNumbers, lotteries[_lotteryId]),
-            ERROR_INVALID_WINNING_NUMBERS
-        );
+        require(_isValidNumbers(winningNumbers, lotteries[_lotteryId]), ERROR_INVALID_WINNING_NUMBERS);
 
-        rounds[currentRoundIdPerLottery[_lotteryId]].status = RoundStatus
-            .Claimable;
-        rounds[currentRoundIdPerLottery[_lotteryId]]
-            .winningNumbers = winningNumbers;
+        rounds[currentRoundIdPerLottery[_lotteryId]].status = RoundStatus.Claimable;
+        rounds[currentRoundIdPerLottery[_lotteryId]].winningNumbers = winningNumbers;
 
         // Emit session claimable
-        emit RoundClaimable(
-            currentRoundIdPerLottery[_lotteryId],
-            winningNumbers
-        );
+        emit RoundClaimable(currentRoundIdPerLottery[_lotteryId], winningNumbers);
     }
 
     /**
@@ -429,9 +334,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * Callable only by the contract owner
      * @param _randomGeneratorAddress: address of the random generator
      */
-    function changeRandomGenerator(
-        address _randomGeneratorAddress
-    ) external onlyOwner {
+    function changeRandomGenerator(address _randomGeneratorAddress) external onlyOwner {
         randomGenerator = IRandomNumberGenerator(_randomGeneratorAddress);
         emit NewRandomGenerator(_randomGeneratorAddress);
     }
@@ -462,20 +365,14 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @param _numbers Array of numbers need check in range LOTTERY require
      * @param _lottery LOTTERYs that users want to check
      */
-    function _isValidNumbers(
-        uint32[] memory _numbers,
-        Lottery memory _lottery
-    ) internal pure returns (bool) {
+    function _isValidNumbers(uint32[] memory _numbers, Lottery memory _lottery) internal pure returns (bool) {
         if (_numbers.length != _lottery.numberOfItems) {
             return false;
         }
 
         for (uint i = 0; i < _numbers.length; i++) {
             uint32 number = _numbers[i];
-            if (
-                number < _lottery.minValuePerItem ||
-                number > _lottery.maxValuePerItem
-            ) {
+            if (number < _lottery.minValuePerItem || number > _lottery.maxValuePerItem) {
                 return false;
             }
         }
@@ -500,16 +397,11 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @param _str1 String 1
      * @param _str2 String 2
      */
-    function _compareTwoStrings(
-        string memory _str1,
-        string memory _str2
-    ) public pure returns (bool) {
+    function _compareTwoStrings(string memory _str1, string memory _str2) public pure returns (bool) {
         if (bytes(_str1).length != bytes(_str2).length) {
             return false;
         }
-        return
-            keccak256(abi.encodePacked(_str1)) ==
-            keccak256(abi.encodePacked(_str2));
+        return keccak256(abi.encodePacked(_str1)) == keccak256(abi.encodePacked(_str2));
     }
 
     /* #endregion */

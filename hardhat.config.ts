@@ -1,13 +1,20 @@
-import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import { HardhatUserConfig } from "hardhat/config";
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.17",
+    version: "0.8.9",
     settings: {
+      // Disable the optimizer when debugging
+      // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
-        runs: 99999,
+        runs: 800,
+      },
+      metadata: {
+        // Not including the metadata hash
+        // https://github.com/paulrberg/hardhat-template/issues/31
+        bytecodeHash: "none",
       },
     },
   },
@@ -16,6 +23,10 @@ const config: HardhatUserConfig = {
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts",
+  },
+  typechain: {
+    outDir: "types",
+    target: "ethers-v5",
   },
 };
 

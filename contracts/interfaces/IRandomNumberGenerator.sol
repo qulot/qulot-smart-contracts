@@ -19,9 +19,7 @@ interface IRandomNumberGenerator {
     /**
      * @param _sessionId Request id combine lotteryProductId and lotterySessionId
      */
-    function getRandomResult(
-        uint256 _sessionId
-    ) external view returns (uint32[] memory);
+    function getRandomResult(uint256 _sessionId) external view returns (uint32[] memory);
 
     /**
      * @notice Set the address for the Qulot
