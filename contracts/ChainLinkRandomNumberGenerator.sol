@@ -1,19 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import "./interfaces/IRandomNumberGenerator.sol";
-import "./interfaces/IQulotLottery.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { VRFConsumerBaseV2 } from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import { VRFCoordinatorV2Interface } from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import { IRandomNumberGenerator } from "./interfaces/IRandomNumberGenerator.sol";
+import { IQulotLottery } from "./interfaces/IQulotLottery.sol";
 
-contract ChainLinkRandomNumberGenerator is
-    VRFConsumerBaseV2,
-    IRandomNumberGenerator,
-    Ownable
-{
+contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGenerator, Ownable {
     using SafeERC20 for IERC20;
     /* #region Constants */
     /* #endregion */
@@ -31,8 +27,7 @@ contract ChainLinkRandomNumberGenerator is
     /* #endregion */
 
     /* #region Constants */
-    string private constant ERROR_ONLY_QULOT_CONTRACT =
-        "ERROR_ONLY_QULOT_CONTRACT";
+    string private constant ERROR_ONLY_QULOT_CONTRACT = "ERROR_ONLY_QULOT_CONTRACT";
     string private constant ERROR_INVALID_KEY_HASH = "ERROR_INVALID_KEY_HASH";
     string private constant ERROR_REQUEST_NOT_FOUND = "ERROR_REQUEST_NOT_FOUND";
     string private constant ERROR_RESULT_NOT_FOUND = "ERROR_RESULT_NOT_FOUND";
@@ -51,12 +46,10 @@ contract ChainLinkRandomNumberGenerator is
     // lastest request id
     uint256 private latestRequestId;
 
-    mapping(uint256 => RequestStatus)
-        private requests; /* requestId --> requestStatus */
-    mapping(uint256 => RequestStatus)
-        private requestsBySessionId; /* sessionId --> requestStatus */
+    mapping(uint256 => RequestStatus) private requests; /* requestId --> requestStatus */
+    mapping(uint256 => RequestStatus) private requestsBySessionId; /* sessionId --> requestStatus */
 
-    VRFCoordinatorV2Interface COORDINATOR;
+    VRFCoordinatorV2Interface private coordinator;
     // ChainLink VRF subscription id
     uint64 private subscriptionId;
 
@@ -70,6 +63,7 @@ contract ChainLinkRandomNumberGenerator is
     // and the processing of the callback request in the fulfillRandomWords()
     // function.
     uint32 private callbackGasLimit = 100000;
+
     /* #endregion */
 
     /* #region Constructor */
@@ -81,13 +75,11 @@ contract ChainLinkRandomNumberGenerator is
      * @param _vrfCoordinator: address of the VRF coordinator
      * @param _subscriptionId: ChainLink VRF subscription id
      */
-    constructor(
-        address _vrfCoordinator,
-        uint64 _subscriptionId
-    ) VRFConsumerBaseV2(_vrfCoordinator) {
-        COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
+    constructor(address _vrfCoordinator, uint64 _subscriptionId) VRFConsumerBaseV2(_vrfCoordinator) {
+        coordinator = VRFCoordinatorV2Interface(_vrfCoordinator);
         subscriptionId = _subscriptionId;
     }
+
     /* #endregion */
 
     /* #region Methods */
@@ -108,7 +100,7 @@ contract ChainLinkRandomNumberGenerator is
         // require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK tokens");
 
         // Will revert if subscription is not set and funded.
-        uint256 requestId = COORDINATOR.requestRandomWords(
+        uint256 requestId = coordinator.requestRandomWords(
             keyHash,
             subscriptionId,
             requestConfirmations,
@@ -133,9 +125,7 @@ contract ChainLinkRandomNumberGenerator is
      * @param _sessionId Request id combine lotteryProductId and lotterySessionId
      * @notice View random result
      */
-    function getRandomResult(
-        uint256 _sessionId
-    ) external view override returns (uint32[] memory) {
+    function getRandomResult(uint256 _sessionId) external view override returns (uint32[] memory) {
         require(requestsBySessionId[_sessionId].exists, ERROR_RESULT_NOT_FOUND);
         return requestsBySessionId[_sessionId].results;
     }
@@ -160,9 +150,7 @@ contract ChainLinkRandomNumberGenerator is
      * @notice Change the requestConfirmations
      * @param _requestConfirmations How many blocks you'd like the oracle to wait before responding to the request. See SECURITY CONSIDERATIONS for why you may want to request more. The acceptable range is
      */
-    function setRequestConfirmations(
-        uint16 _requestConfirmations
-    ) external onlyOwner {
+    function setRequestConfirmations(uint16 _requestConfirmations) external onlyOwner {
         requestConfirmations = _requestConfirmations;
     }
 
@@ -177,17 +165,13 @@ contract ChainLinkRandomNumberGenerator is
     /**
      * @notice Callback function used by ChainLink's VRF Coordinator
      */
-    function fulfillRandomWords(
-        uint256 _requestId,
-        uint256[] memory _randomWords
-    ) internal override {
+    function fulfillRandomWords(uint256 _requestId, uint256[] memory _randomWords) internal override {
         require(requests[_requestId].exists, ERROR_REQUEST_NOT_FOUND);
 
         for (uint i = 0; i < _randomWords.length; i++) {
             // transform the result to a number between min and max inclusively
             uint32 resultInRange = uint32(
-                (_randomWords[i] % requests[_requestId].maxValuePerItems) +
-                    requests[_requestId].minValuePerItems
+                (_randomWords[i] % requests[_requestId].maxValuePerItems) + requests[_requestId].minValuePerItems
             );
             requests[_requestId].results[i] = resultInRange;
         }
@@ -201,10 +185,7 @@ contract ChainLinkRandomNumberGenerator is
      * @param _tokenAmount: the number of token amount to withdraw
      * @dev Only callable by owner.
      */
-    function withdrawTokens(
-        address _tokenAddress,
-        uint256 _tokenAmount
-    ) external onlyOwner {
+    function withdrawTokens(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
         IERC20(_tokenAddress).safeTransfer(address(msg.sender), _tokenAmount);
     }
     /* #endregion */

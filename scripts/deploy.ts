@@ -1,23 +1,20 @@
-// import { ethers } from "hardhat";
+import { ethers } from "hardhat";
 
-// async function main() {
-//   const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-//   const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-//   const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+async function main() {
+  const ChainLinkRandomNumberGenerator = await ethers.getContractFactory("ChainLinkRandomNumberGenerator");
+  const chainLinkRandomNumberGenerator = await ChainLinkRandomNumberGenerator.deploy();
+  await chainLinkRandomNumberGenerator.deployed();
+  const QulotLottery = await ethers.getContractFactory("QulotLottery");
+  const qulotLottery = await QulotLottery.deploy(
+    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    chainLinkRandomNumberGenerator.address,
+  );
+  await qulotLottery.deployed();
+}
 
-//   const lockedAmount = ethers.utils.parseEther("1");
-
-//   const Lock = await ethers.getContractFactory("Lock");
-//   const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
-
-//   await lock.deployed();
-
-//   console.log(`Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`);
-// }
-
-// // We recommend this pattern to be able to use async/await everywhere
-// // and properly handle errors.
-// main().catch((error) => {
-//   console.error(error);
-//   process.exitCode = 1;
-// });
+// We recommend this pattern to be able to use async/await everywhere
+// and properly handle errors.
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

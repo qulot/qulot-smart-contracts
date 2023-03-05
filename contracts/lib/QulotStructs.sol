@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import {RoundStatus, RewardUnit} from "./QulotEnums.sol";
+import { RoundStatus, RewardUnit } from "./QulotEnums.sol";
 
 struct Lottery {
     string verboseName;

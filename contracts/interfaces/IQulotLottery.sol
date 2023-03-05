@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import {RewardUnit} from "../lib/QulotEnums.sol";
+import { RewardUnit } from "../lib/QulotEnums.sol";
 
 interface IQulotLottery {
     /**
@@ -65,10 +65,7 @@ interface IQulotLottery {
      * @param _tickets array of ticket
      * @dev Callable by users
      */
-    function buyTickets(
-        uint256 _roundId,
-        uint32[][] calldata _tickets
-    ) external;
+    function buyTickets(uint256 _roundId, uint32[][] calldata _tickets) external;
 
     /**
      *

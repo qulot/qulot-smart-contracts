@@ -1,16 +1,16 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "../interfaces/IRandomNumberGenerator.sol";
-import "../interfaces/IQulotLottery.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IRandomNumberGenerator } from "../interfaces/IRandomNumberGenerator.sol";
+import { IQulotLottery } from "../interfaces/IQulotLottery.sol";
 
 contract MockRandomNumberGenerator is IRandomNumberGenerator, Ownable {
     address public qulotLottery;
     mapping(uint256 => uint32[]) public results;
 
     // Initializing the state variable
-    uint randNonce = 0;
+    uint private _randNonce = 0;
 
     function requestRandomNumbers(
         uint256 _sessionId,
@@ -22,24 +22,16 @@ contract MockRandomNumberGenerator is IRandomNumberGenerator, Ownable {
         uint32[] memory winningNumbers = new uint32[](_numbersOfItems);
         for (uint i = 0; i < _numbersOfItems; i++) {
             // increase nonce
-            randNonce++;
-            uint randomHash = uint(
-                keccak256(
-                    abi.encodePacked(block.timestamp, msg.sender, randNonce)
-                )
-            );
-            uint32 resultInRange = uint32(
-                (randomHash % _maxValuePerItems) + _minValuePerItems
-            );
+            _randNonce++;
+            uint randomHash = uint(keccak256(abi.encodePacked(block.timestamp, msg.sender, _randNonce)));
+            uint32 resultInRange = uint32((randomHash % _maxValuePerItems) + _minValuePerItems);
             winningNumbers[i] = resultInRange;
         }
 
         results[_sessionId] = winningNumbers;
     }
 
-    function getRandomResult(
-        uint256 _sessionId
-    ) external view override returns (uint32[] memory) {
+    function getRandomResult(uint256 _sessionId) external view override returns (uint32[] memory) {
         return results[_sessionId];
     }
 
