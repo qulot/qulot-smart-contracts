@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { parseEther } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 
-describe("QulotLottery", function () {
+describe("contracts/QulotLottery", function () {
   async function deployQulotLotteryFixture() {
     // Contracts are deployed using the first signer/account by default
     const [owner, otherAccount, operatorAccount] = await ethers.getSigners();
@@ -252,7 +252,7 @@ describe("QulotLottery", function () {
         const { qulotLottery, operatorAccount } = await loadFixture(deployQulotLotteryFixture);
 
         // Register new lottery first
-        qulotLottery
+        await qulotLottery
           .connect(operatorAccount)
           .addLottery(
             "liteq",
@@ -394,6 +394,32 @@ describe("QulotLottery", function () {
 
         expect(newRule).to.be.an("array").includes(1);
         expect(newRule).to.be.an("array").includes(0);
+      });
+    });
+  });
+
+  describe("open", function () {
+    describe("Validations", function () {
+      it("Should fail if invalid id", async function () {
+        const { qulotLottery, operatorAccount } = await loadFixture(deployQulotLotteryFixture);
+
+        await qulotLottery
+          .connect(operatorAccount)
+          .addLottery(
+            "liteq",
+            "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+            "LiteQ",
+            "3",
+            "1",
+            "66",
+            ["1", "2", "3", "4", "5", "6"],
+            "24",
+            "10000",
+            parseEther("1"),
+            "10",
+          );
+
+        // qulotLottery.open("liteq", )
       });
     });
   });
