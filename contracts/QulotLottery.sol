@@ -18,7 +18,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     string private constant ERROR_CONTRACT_NOT_ALLOWED = "ERROR_CONTRACT_NOT_ALLOWED";
     string private constant ERROR_PROXY_CONTRACT_NOT_ALLOWED = "ERROR_PROXY_CONTRACT_NOT_ALLOWED";
     string private constant ERROR_ONLY_OPERATOR = "ERROR_ONLY_OPERATOR";
-    string private constant ERROR_SESSION_IS_CLOSED = "ERROR_SESSION_IS_CLOSED";
+    string private constant ERROR_ROUND_IS_CLOSED = "ERROR_ROUND_IS_CLOSED";
     string private constant ERROR_TICKETS_LIMIT = "ERROR_TICKETS_LIMIT";
     string private constant ERROR_TICKETS_EMPTY = "ERROR_TICKETS_EMPTY";
     string private constant ERROR_INVALID_TICKET = "ERROR_INVALID_TICKET";
@@ -42,6 +42,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     string private constant ERROR_LOTTERY_ALREADY_EXISTS = "ERROR_LOTTERY_ALREADY_EXISTS";
     string private constant ERROR_INVALID_RULE_REWARD_VALUE = "ERROR_INVALID_RULE_REWARD_VALUE";
     string private constant ERROR_INVALID_RULE_MATCH_NUMBER = "ERROR_INVALID_RULE_MATCH_NUMBER";
+    string private constant ERROR_INVALID_ROUND_DRAW_TIME = "ERROR_INVALID_ROUND_DRAW_TIME";
     /* #endregion */
 
     /* #region Events */
@@ -58,7 +59,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     // Mapping lotteryId to lottery info
     mapping(string => Lottery) public lotteries;
 
-    // Mapping roundId to session info
+    // Mapping roundId to round info
     mapping(uint256 => Round) public rounds;
 
     // Mapping ticketId to ticket info
@@ -68,6 +69,8 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     mapping(uint256 => string) public roundsPerLotteryId;
 
     mapping(string => uint256) public currentRoundIdPerLottery;
+    mapping(string => uint256) public lastRoundIdPerLottery;
+    mapping(string => uint256) public amountInjectNextRoundPerLottery;
 
     // Keep track of user ticket ids for a given roundId
     mapping(address => mapping(uint256 => uint256[])) public userTicketsPerRoundId;
@@ -216,10 +219,10 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     function buyTickets(uint256 _roundId, uint32[][] calldata _tickets) external override notContract nonReentrant {
         // check list tickets is empty
         require(_tickets.length != 0, ERROR_TICKETS_EMPTY);
-        // check session is open
-        require(rounds[_roundId].status != RoundStatus.Open, ERROR_SESSION_IS_CLOSED);
-        // check session too late
-        require(block.timestamp < rounds[_roundId].drawDateTime, ERROR_SESSION_IS_CLOSED);
+        // check round is open
+        require(rounds[_roundId].status != RoundStatus.Open, ERROR_ROUND_IS_CLOSED);
+        // check round too late
+        require(block.timestamp < rounds[_roundId].drawDateTime, ERROR_ROUND_IS_CLOSED);
         // check limit ticket
         require(_tickets.length <= lotteries[roundsPerLotteryId[_roundId]].maxNumberTicketsPerBuy, ERROR_TICKETS_LIMIT);
 
@@ -251,30 +254,36 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     /**
      *
      * @param _lotteryId lottery id
-     * @param _drawDateTime New session draw datetime (UTC)
+     * @param _drawDateTime New round draw datetime (UTC)
      */
     function open(string calldata _lotteryId, uint256 _drawDateTime) external override onlyOperator {
+        require(bytes(_lotteryId).length > 0, ERROR_INVALID_LOTTERY_ID);
+        require(_drawDateTime > 0, ERROR_INVALID_ROUND_DRAW_TIME);
         require(
             (currentRoundIdPerLottery[_lotteryId] == 0) ||
-                (rounds[currentRoundIdPerLottery[_lotteryId]].status == RoundStatus.Close),
-            ERROR_NOT_TIME_CLOSE_LOTTERY
+                (rounds[currentRoundIdPerLottery[_lotteryId]].status == RoundStatus.Claimable),
+            ERROR_NOT_TIME_OPEN_LOTTERY
         );
 
-        // Increment current session id of lottery to one
+        // Increment current round id of lottery to one
         incrementRoundId++;
+        lastRoundIdPerLottery[_lotteryId] = currentRoundIdPerLottery[_lotteryId];
         currentRoundIdPerLottery[_lotteryId] = incrementRoundId;
 
-        // Create new session
+        // Create new round
         rounds[currentRoundIdPerLottery[_lotteryId]] = Round({
             winningNumbers: new uint32[](lotteries[_lotteryId].numberOfItems),
             drawDateTime: _drawDateTime,
             openTime: block.timestamp,
-            totalAmount: 0,
+            totalAmount: amountInjectNextRoundPerLottery[_lotteryId],
             status: RoundStatus.Open
         });
 
-        // Emit session open
+        // Emit round open
         emit RoundOpen(currentRoundIdPerLottery[_lotteryId], block.timestamp);
+
+        // Reset amount injection for next round
+        amountInjectNextRoundPerLottery[_lotteryId] = 0;
     }
 
     /**
@@ -298,7 +307,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             lotteries[_lotteryId].maxValuePerItem
         );
 
-        // Emit session close
+        // Emit round close
         emit RoundClose(currentRoundIdPerLottery[_lotteryId], block.timestamp);
     }
 
@@ -324,7 +333,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         rounds[currentRoundIdPerLottery[_lotteryId]].status = RoundStatus.Claimable;
         rounds[currentRoundIdPerLottery[_lotteryId]].winningNumbers = winningNumbers;
 
-        // Emit session claimable
+        // Emit round claimable
         emit RoundClaimable(currentRoundIdPerLottery[_lotteryId], winningNumbers);
     }
 
