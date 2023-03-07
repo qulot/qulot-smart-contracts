@@ -1,7 +1,11 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { parseEther } from "ethers/lib/utils";
 import { ethers } from "hardhat";
+import moment from "moment";
+
+import { QulotLottery, QulotLottery__factory } from "../types";
 
 describe("contracts/QulotLottery", function () {
   async function deployQulotLotteryFixture() {
@@ -45,7 +49,7 @@ describe("contracts/QulotLottery", function () {
               parseEther("1.0"),
               "10",
             ),
-        ).to.be.revertedWith("ERROR_INVALID_LOTTERY_ID");
+        ).to.revertedWith("ERROR_INVALID_LOTTERY_ID");
       });
 
       it("Should fail if invalid picture", async function () {
@@ -68,7 +72,7 @@ describe("contracts/QulotLottery", function () {
               parseEther("1.0"),
               "10",
             ),
-        ).to.be.revertedWith("ERROR_INVALID_LOTTERY_PICTURE");
+        ).to.revertedWith("ERROR_INVALID_LOTTERY_PICTURE");
       });
 
       it("Should fail if invalid verbose name", async function () {
@@ -91,7 +95,7 @@ describe("contracts/QulotLottery", function () {
               parseEther("1.0"),
               "10",
             ),
-        ).to.be.revertedWith("ERROR_INVALID_LOTTERY_VERBOSE_NAME");
+        ).to.revertedWith("ERROR_INVALID_LOTTERY_VERBOSE_NAME");
       });
 
       it("Should fail if invalid number rules", async function () {
@@ -114,7 +118,7 @@ describe("contracts/QulotLottery", function () {
               parseEther("1.0"),
               "10",
             ),
-        ).to.be.revertedWith("ERROR_INVALID_LOTTERY_NUMBER_OF_ITEMS");
+        ).to.revertedWith("ERROR_INVALID_LOTTERY_NUMBER_OF_ITEMS");
 
         // Test invalid lottery min value per item
         await expect(
@@ -133,7 +137,7 @@ describe("contracts/QulotLottery", function () {
               parseEther("1.0"),
               "10",
             ),
-        ).to.be.revertedWith("ERROR_INVALID_LOTTERY_MIN_VALUE_PER_ITEMS");
+        ).to.revertedWith("ERROR_INVALID_LOTTERY_MIN_VALUE_PER_ITEMS");
 
         // Test invalid lottery max value per item
         await expect(
@@ -152,7 +156,7 @@ describe("contracts/QulotLottery", function () {
               parseEther("1.0"),
               "10",
             ),
-        ).to.be.revertedWith("ERROR_INVALID_LOTTERY_MAX_VALUE_PER_ITEMS");
+        ).to.revertedWith("ERROR_INVALID_LOTTERY_MAX_VALUE_PER_ITEMS");
       });
 
       it("Should fail if invalid period draw time", async function () {
@@ -175,7 +179,7 @@ describe("contracts/QulotLottery", function () {
               parseEther("1.0"),
               "10",
             ),
-        ).to.be.revertedWith("ERROR_INVALID_LOTTERY_PERIOD_DAYS");
+        ).to.revertedWith("ERROR_INVALID_LOTTERY_PERIOD_DAYS");
 
         // Test invalid lottery period hour of days
         await expect(
@@ -194,7 +198,7 @@ describe("contracts/QulotLottery", function () {
               parseEther("1.0"),
               "10",
             ),
-        ).to.be.revertedWith("ERROR_INVALID_LOTTERY_PERIOD_HOUR_OF_DAYS");
+        ).to.revertedWith("ERROR_INVALID_LOTTERY_PERIOD_HOUR_OF_DAYS");
       });
 
       it("Should fail if invalid price", async function () {
@@ -216,7 +220,7 @@ describe("contracts/QulotLottery", function () {
               parseEther("0"),
               "10",
             ),
-        ).to.be.revertedWith("ERROR_INVALID_LOTTERY_PRICE_PER_TICKET");
+        ).to.revertedWith("ERROR_INVALID_LOTTERY_PRICE_PER_TICKET");
       });
     });
 
@@ -243,7 +247,7 @@ describe("contracts/QulotLottery", function () {
               parseEther("1"),
               "10",
             ),
-        ).to.be.revertedWith("ERROR_ONLY_OPERATOR");
+        ).to.revertedWith("ERROR_ONLY_OPERATOR");
       });
     });
 
@@ -285,7 +289,7 @@ describe("contracts/QulotLottery", function () {
               parseEther("1"),
               "10",
             ),
-        ).to.be.revertedWith("ERROR_LOTTERY_ALREADY_EXISTS");
+        ).to.revertedWith("ERROR_LOTTERY_ALREADY_EXISTS");
       });
 
       it("Will match all if adding new lottery is successful", async function () {
@@ -310,8 +314,8 @@ describe("contracts/QulotLottery", function () {
 
         // Register new lottery again, Expect error lottery already exists
         const liteq = await qulotLottery.lotteries("liteq");
-        await expect(liteq).to.be.an("array").that.includes("LiteQ");
-        expect(liteq).to.be.an("array").that.includes("ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png");
+        await expect(liteq).to.an("array").that.includes("LiteQ");
+        expect(liteq).to.an("array").that.includes("ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png");
       });
     });
 
@@ -349,7 +353,7 @@ describe("contracts/QulotLottery", function () {
         const { qulotLottery, operatorAccount } = await loadFixture(deployQulotLotteryFixture);
 
         // Test invalid lottery id
-        await expect(qulotLottery.connect(operatorAccount).addRule("", "1", "0", "50")).to.be.revertedWith(
+        await expect(qulotLottery.connect(operatorAccount).addRule("", "1", "0", "50")).to.revertedWith(
           "ERROR_INVALID_LOTTERY_ID",
         );
       });
@@ -358,7 +362,7 @@ describe("contracts/QulotLottery", function () {
         const { qulotLottery, operatorAccount } = await loadFixture(deployQulotLotteryFixture);
 
         // Test invalid match number
-        await expect(qulotLottery.connect(operatorAccount).addRule("liteq", "0", "0", "50")).to.be.revertedWith(
+        await expect(qulotLottery.connect(operatorAccount).addRule("liteq", "0", "0", "50")).to.revertedWith(
           "ERROR_INVALID_RULE_MATCH_NUMBER",
         );
       });
@@ -367,7 +371,7 @@ describe("contracts/QulotLottery", function () {
         const { qulotLottery, operatorAccount } = await loadFixture(deployQulotLotteryFixture);
 
         // Test invalid reward value of rule
-        await expect(qulotLottery.connect(operatorAccount).addRule("liteq", "1", "0", "0")).to.be.revertedWith(
+        await expect(qulotLottery.connect(operatorAccount).addRule("liteq", "1", "0", "0")).to.revertedWith(
           "ERROR_INVALID_RULE_REWARD_VALUE",
         );
       });
@@ -380,7 +384,7 @@ describe("contracts/QulotLottery", function () {
         await qulotLottery.setOperatorAddress(otherAccount.address);
 
         // Register new lottery again, Expect error lottery already exists
-        await expect(qulotLottery.connect(operatorAccount).addRule("liteq", "1", "0", "50")).to.be.revertedWith(
+        await expect(qulotLottery.connect(operatorAccount).addRule("liteq", "1", "0", "50")).to.revertedWith(
           "ERROR_ONLY_OPERATOR",
         );
       });
@@ -392,34 +396,93 @@ describe("contracts/QulotLottery", function () {
         await qulotLottery.connect(operatorAccount).addRule("liteq", "1", "0", "50");
         const newRule = await qulotLottery.rulesPerLotteryId("liteq", 0);
 
-        expect(newRule).to.be.an("array").includes(1);
-        expect(newRule).to.be.an("array").includes(0);
+        expect(newRule).to.an("array").includes(1);
+        expect(newRule).to.an("array").includes(0);
       });
     });
   });
 
   describe("open", function () {
+    const initLottery = async (qulotLottery: QulotLottery, account: SignerWithAddress) => {
+      qulotLottery = await qulotLottery.connect(account);
+
+      await qulotLottery.addLottery(
+        "liteq",
+        "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+        "LiteQ",
+        "3",
+        "1",
+        "66",
+        ["1", "2", "3", "4", "5", "6"],
+        "24",
+        "10000",
+        parseEther("1"),
+        "10",
+      );
+
+      return qulotLottery;
+    };
+
     describe("Validations", function () {
       it("Should fail if invalid id", async function () {
-        const { qulotLottery, operatorAccount } = await loadFixture(deployQulotLotteryFixture);
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        const operatorAccount = fixture.operatorAccount;
+        let qulotLottery = fixture.qulotLottery;
+        // Register new lottery first
+        qulotLottery = await initLottery(qulotLottery, operatorAccount);
+        await expect(qulotLottery.connect(operatorAccount).open("", moment.utc().unix())).to.revertedWith(
+          "ERROR_INVALID_LOTTERY_ID",
+        );
+      });
 
-        await qulotLottery
-          .connect(operatorAccount)
-          .addLottery(
-            "liteq",
-            "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
-            "LiteQ",
-            "3",
-            "1",
-            "66",
-            ["1", "2", "3", "4", "5", "6"],
-            "24",
-            "10000",
-            parseEther("1"),
-            "10",
-          );
+      it("Should fail if invalid drawTime", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        const operatorAccount = fixture.operatorAccount;
+        let qulotLottery = fixture.qulotLottery;
+        // Register new lottery first
+        qulotLottery = await initLottery(qulotLottery, operatorAccount);
+        await expect(qulotLottery.open("liteq", "0")).to.revertedWith("ERROR_INVALID_ROUND_DRAW_TIME");
+      });
+    });
 
-        // qulotLottery.open("liteq", )
+    describe("Modifiers", function () {
+      it("Should fail if caller is not operator", async function () {
+        const { qulotLottery, operatorAccount, otherAccount } = await loadFixture(deployQulotLotteryFixture);
+        await qulotLottery.setOperatorAddress(otherAccount.address);
+        await expect(qulotLottery.connect(operatorAccount).open("liteq", "1")).to.revertedWith("ERROR_ONLY_OPERATOR");
+      });
+    });
+
+    describe("Data", function () {
+      it("Operator cannot start a second round", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        const operatorAccount = fixture.operatorAccount;
+        let qulotLottery = fixture.qulotLottery;
+        qulotLottery = await initLottery(qulotLottery, operatorAccount);
+        await qulotLottery.open("liteq", "1");
+        await expect(qulotLottery.open("liteq", "1")).to.revertedWith("ERROR_NOT_TIME_OPEN_LOTTERY");
+      });
+
+      it("Will match all if open lottery successful", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        const operatorAccount = fixture.operatorAccount;
+        let qulotLottery = fixture.qulotLottery;
+        qulotLottery = await initLottery(qulotLottery, operatorAccount);
+        await qulotLottery.open("liteq", "1");
+        expect(await qulotLottery.rounds(1)).to.haveOwnProperty("status", 0);
+        expect(await qulotLottery.currentRoundIdPerLottery("liteq")).to.equal(1);
+      });
+    });
+
+    describe("Events", function () {
+      it("Should emit an event on new round", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        const operatorAccount = fixture.operatorAccount;
+        let qulotLottery = fixture.qulotLottery;
+        qulotLottery = await initLottery(qulotLottery, operatorAccount);
+        // Check event emitted
+        const result = await (await qulotLottery.open("liteq", "1")).wait();
+        expect(result.events?.[0].args?.roundId).to.equal(1);
       });
     });
   });

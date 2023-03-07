@@ -6,9 +6,10 @@ export const getDateNowUTC = () => {
 
 export const getNextDrawTime = (periodDays: number[], periodHourOfDays: number) => {
   let nextDrawTime = getDateNowUTC().set("hour", periodHourOfDays);
-  let weekday = nextDrawTime.isoWeekday();
+  const weekday = nextDrawTime.isoWeekday();
 
   let periodDay = 0;
+  /*eslint no-constant-condition: ["error", { "checkLoops": false }]*/
   while (true) {
     if (weekday > periodDays[periodDay]) {
       nextDrawTime = nextDrawTime.add(periodDays[periodDay], "days");
