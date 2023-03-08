@@ -1,11 +1,10 @@
+import { QulotLottery } from "@/types";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { parseEther } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import moment from "moment";
-
-import { QulotLottery, QulotLottery__factory } from "../types";
 
 describe("contracts/QulotLottery", function () {
   async function deployQulotLotteryFixture() {

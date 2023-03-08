@@ -1,10 +1,10 @@
 import moment from "moment";
 
-export const getDateNowUTC = () => {
+export function getDateNowUTC() {
   return moment.utc();
-};
+}
 
-export const getNextDrawTime = (periodDays: number[], periodHourOfDays: number) => {
+export function getNextDrawTime(periodDays: number[], periodHourOfDays: number) {
   let nextDrawTime = getDateNowUTC().set("hour", periodHourOfDays);
   const weekday = nextDrawTime.isoWeekday();
 
@@ -20,4 +20,4 @@ export const getNextDrawTime = (periodDays: number[], periodHourOfDays: number) 
   }
 
   return nextDrawTime;
-};
+}

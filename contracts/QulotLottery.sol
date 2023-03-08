@@ -69,7 +69,6 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     mapping(uint256 => string) public roundsPerLotteryId;
 
     mapping(string => uint256) public currentRoundIdPerLottery;
-    mapping(string => uint256) public lastRoundIdPerLottery;
     mapping(string => uint256) public amountInjectNextRoundPerLottery;
 
     // Keep track of user ticket ids for a given roundId
@@ -265,13 +264,14 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             ERROR_NOT_TIME_OPEN_LOTTERY
         );
 
+        uint256 firstRoundId = currentRoundIdPerLottery[_lotteryId];
         // Increment current round id of lottery to one
         incrementRoundId++;
-        lastRoundIdPerLottery[_lotteryId] = currentRoundIdPerLottery[_lotteryId];
         currentRoundIdPerLottery[_lotteryId] = incrementRoundId;
 
         // Create new round
         rounds[currentRoundIdPerLottery[_lotteryId]] = Round({
+            firstRoundId: firstRoundId,
             winningNumbers: new uint32[](lotteries[_lotteryId].numberOfItems),
             drawDateTime: _drawDateTime,
             openTime: block.timestamp,

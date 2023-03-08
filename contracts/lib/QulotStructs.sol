@@ -23,6 +23,7 @@ struct Round {
     uint256 drawDateTime;
     uint256 openTime;
     uint256 totalAmount;
+    uint256 firstRoundId;
     RoundStatus status;
 }
 
