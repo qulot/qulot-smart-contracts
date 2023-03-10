@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.6;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
+import { Counters } from "@openzeppelin/contracts/utils/Counters.sol";
 import { IQulotLottery } from "./interfaces/IQulotLottery.sol";
 import { IRandomNumberGenerator } from "./interfaces/IRandomNumberGenerator.sol";
 import { RoundStatus, RewardUnit } from "./lib/QulotEnums.sol";
+import { String } from "./utils/StringUtils.sol";
 import { Lottery, Round, Ticket, Rule } from "./lib/QulotStructs.sol";
 
 contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     using SafeERC20 for IERC20;
+    using Counters for Counters.Counter;
 
     /* #region Constants */
     string private constant ERROR_CONTRACT_NOT_ALLOWED = "ERROR_CONTRACT_NOT_ALLOWED";
@@ -59,6 +62,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
 
     /* #region States */
     // Mapping lotteryId to lottery info
+    string[] public lotteryIds;
     mapping(string => Lottery) public lotteries;
 
     // Mapping roundId to round info
@@ -85,8 +89,8 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     IERC20 public token;
     IRandomNumberGenerator public randomGenerator;
 
-    uint256 private incrementRoundId;
-    uint256 private currentTicketId;
+    Counters.Counter private _counterTicketId;
+    Counters.Counter private _counterRoundId;
     /* #endregion */
 
     /* #region Modifiers */
@@ -155,9 +159,9 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         uint32 _treasuryFeePercent,
         uint32 _amountInjectNextRoundPercent
     ) external override onlyOperator {
-        require(bytes(_lotteryId).length > 0, ERROR_INVALID_LOTTERY_ID);
-        require(bytes(_picture).length > 0, ERROR_INVALID_LOTTERY_PICTURE);
-        require(bytes(_verboseName).length > 0, ERROR_INVALID_LOTTERY_VERBOSE_NAME);
+        require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
+        require(!String.isEmpty(_picture), ERROR_INVALID_LOTTERY_PICTURE);
+        require(!String.isEmpty(_verboseName), ERROR_INVALID_LOTTERY_VERBOSE_NAME);
         require(_numberOfItems > 0, ERROR_INVALID_LOTTERY_NUMBER_OF_ITEMS);
         require(_minValuePerItem > 0, ERROR_INVALID_LOTTERY_MIN_VALUE_PER_ITEMS);
         require(_maxValuePerItem > 0 && _maxValuePerItem < type(uint32).max, ERROR_INVALID_LOTTERY_MAX_VALUE_PER_ITEMS);
@@ -170,7 +174,10 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         require(_pricePerTicket > 0, ERROR_INVALID_LOTTERY_PRICE_PER_TICKET);
         require(_treasuryFeePercent >= 0, ERROR_INVALID_LOTTERY_TREASURY_FEE_PERCENT);
 
-        require(!_compareTwoStrings(lotteries[_lotteryId].verboseName, _verboseName), ERROR_LOTTERY_ALREADY_EXISTS);
+        require(
+            !String.compareTwoStrings(lotteries[_lotteryId].verboseName, _verboseName),
+            ERROR_LOTTERY_ALREADY_EXISTS
+        );
 
         lotteries[_lotteryId] = Lottery({
             verboseName: _verboseName,
@@ -187,8 +194,24 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             totalPrize: 0,
             totalTickets: 0
         });
+        lotteryIds.push(_lotteryId);
 
         emit NewLottery(_lotteryId, _verboseName);
+    }
+
+    /**
+     * @notice Return a list of lottery ids
+     */
+    function getLotteryIds() external view override returns (string[] memory) {
+        return lotteryIds;
+    }
+
+    /**
+     * @notice Return lottery by id
+     * @param _lotteryId Id of lottery
+     */
+    function getLottery(string calldata _lotteryId) external view override returns (Lottery memory) {
+        return lotteries[_lotteryId];
     }
 
     /**
@@ -264,10 +287,10 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         for (uint i = 0; i < _tickets.length; i++) {
             uint32[] memory ticketNumbers = _tickets[i];
             require(_isValidNumbers(ticketNumbers, lotteries[roundsPerLotteryId[_roundId]]), ERROR_INVALID_TICKET);
-            tickets[currentTicketId] = Ticket({ numbers: ticketNumbers, owner: msg.sender });
-            userTicketsPerRoundId[msg.sender][_roundId].push(currentTicketId);
+            tickets[_counterTicketId.current()] = Ticket({ numbers: ticketNumbers, owner: msg.sender });
+            userTicketsPerRoundId[msg.sender][_roundId].push(_counterTicketId.current());
             // Increment lottery ticket number
-            currentTicketId++;
+            _counterTicketId.increment();
         }
 
         emit TicketsPurchase(msg.sender, _roundId, _tickets.length);
@@ -279,7 +302,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @param _drawDateTime New round draw datetime (UTC)
      */
     function open(string calldata _lotteryId, uint256 _drawDateTime) external override onlyOperator {
-        require(bytes(_lotteryId).length > 0, ERROR_INVALID_LOTTERY_ID);
+        require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
         require(_drawDateTime > 0, ERROR_INVALID_ROUND_DRAW_TIME);
         require(
             (currentRoundIdPerLottery[_lotteryId] == 0) ||
@@ -289,8 +312,8 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
 
         uint256 firstRoundId = currentRoundIdPerLottery[_lotteryId];
         // Increment current round id of lottery to one
-        incrementRoundId++;
-        currentRoundIdPerLottery[_lotteryId] = incrementRoundId;
+        _counterRoundId.increment();
+        currentRoundIdPerLottery[_lotteryId] = _counterRoundId.current();
 
         // Create new round
         rounds[currentRoundIdPerLottery[_lotteryId]] = Round({
@@ -366,7 +389,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * Callable only by the contract owner
      * @param _randomGeneratorAddress: address of the random generator
      */
-    function changeRandomGenerator(address _randomGeneratorAddress) external onlyOwner {
+    function changeRandomGenerator(address _randomGeneratorAddress) external override onlyOwner {
         randomGenerator = IRandomNumberGenerator(_randomGeneratorAddress);
         emit NewRandomGenerator(_randomGeneratorAddress);
     }
@@ -405,7 +428,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         RewardUnit _rewardUnit,
         uint256 _rewardValue
     ) internal {
-        require(bytes(_lotteryId).length > 0, ERROR_INVALID_LOTTERY_ID);
+        require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
         require(_matchNumber > 0, ERROR_INVALID_RULE_MATCH_NUMBER);
         require(_rewardValue > 0, ERROR_INVALID_RULE_REWARD_VALUE);
 
@@ -447,18 +470,5 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     ) internal pure returns (uint256) {
         return _lottery.pricePerTicket * _numberTickets;
     }
-
-    /**
-     * @notice Compare two strings. Returns true if two strings are equal
-     * @param _str1 String 1
-     * @param _str2 String 2
-     */
-    function _compareTwoStrings(string memory _str1, string memory _str2) internal pure returns (bool) {
-        if (bytes(_str1).length != bytes(_str2).length) {
-            return false;
-        }
-        return keccak256(abi.encodePacked(_str1)) == keccak256(abi.encodePacked(_str2));
-    }
-
     /* #endregion */
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.6;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -158,7 +158,7 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
      * @notice Set the address for the Qulot
      * @param _qulotLottery: address of the Qulot lottery
      */
-    function setLotteryAddress(address _qulotLottery) external onlyOwner {
+    function setLotteryAddress(address _qulotLottery) external override onlyOwner {
         qulotLotteryAddress = _qulotLottery;
     }
 

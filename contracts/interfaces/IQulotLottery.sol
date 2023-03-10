@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.6;
 
 import { RewardUnit } from "../lib/QulotEnums.sol";
+import { Lottery } from "../lib/QulotStructs.sol";
 
 interface IQulotLottery {
     /**
@@ -44,6 +45,17 @@ interface IQulotLottery {
         uint32 _treasuryFeePercent,
         uint32 _amountInjectNextRoundPercent
     ) external;
+
+    /**
+     * @notice Return a list of lottery ids
+     */
+    function getLotteryIds() external view returns (string[] memory lotteryIds);
+
+    /**
+     * @notice Return lottery by id
+     * @param _lotteryId Id of lottery
+     */
+    function getLottery(string calldata _lotteryId) external view returns (Lottery memory lottery);
 
     /**
      * @notice Add more rule reward for lottery payout. Only call when deploying smart contact for the first time

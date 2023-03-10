@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.6;
 
 import { RoundStatus, RewardUnit } from "./QulotEnums.sol";
 
@@ -9,7 +9,9 @@ struct Lottery {
     uint32 numberOfItems;
     uint32 minValuePerItem;
     uint32 maxValuePerItem;
+    // day of the week (1 - 7) (Monday to Sunday)
     uint[] periodDays;
+    // hour (0 - 23)
     uint periodHourOfDays;
     uint32 maxNumberTicketsPerBuy;
     uint256 pricePerTicket;
