@@ -4,22 +4,22 @@ pragma solidity ^0.8.9;
 interface IRandomNumberGenerator {
     /**
      *
-     * @param _sessionId Request id combine lotteryProductId and lotterySessionId
+     * @param _roundId Request id combine lotteryProductId and lotteryroundId
      * @param _numbersOfItems Numbers of items
      * @param _minValuePerItems Min value per items
      * @param _maxValuePerItems Max value per items
      */
     function requestRandomNumbers(
-        uint256 _sessionId,
+        uint256 _roundId,
         uint32 _numbersOfItems,
         uint32 _minValuePerItems,
         uint32 _maxValuePerItems
     ) external;
 
     /**
-     * @param _sessionId Request id combine lotteryProductId and lotterySessionId
+     * @param _roundId Request id combine lotteryProductId and lotteryroundId
      */
-    function getRandomResult(uint256 _sessionId) external view returns (uint32[] memory);
+    function getRandomResult(uint256 _roundId) external view returns (uint32[] memory);
 
     /**
      * @notice Set the address for the Qulot

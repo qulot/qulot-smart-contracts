@@ -42,6 +42,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     string private constant ERROR_LOTTERY_ALREADY_EXISTS = "ERROR_LOTTERY_ALREADY_EXISTS";
     string private constant ERROR_INVALID_RULE_REWARD_VALUE = "ERROR_INVALID_RULE_REWARD_VALUE";
     string private constant ERROR_INVALID_RULE_MATCH_NUMBER = "ERROR_INVALID_RULE_MATCH_NUMBER";
+    string private constant ERROR_INVALID_RULES = "ERROR_INVALID_RULES";
     string private constant ERROR_INVALID_ROUND_DRAW_TIME = "ERROR_INVALID_ROUND_DRAW_TIME";
     /* #endregion */
 
@@ -49,6 +50,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     event TicketsPurchase(address indexed buyer, uint256 indexed roundId, uint256 numberTickets);
     event TicketsClam(address indexed claimer, uint256 indexed roundId, uint256 amount);
     event NewLottery(string indexed lotteryId, string verboseName);
+    event NewRewardRule(string lotteryId, uint32 _matchNumber, RewardUnit rewardUnit, uint256 rewardValue);
     event RoundOpen(uint256 indexed roundId, uint256 startTime);
     event RoundClose(uint256 indexed roundId, uint256 endTime);
     event RoundClaimable(uint256 indexed roundId, uint32[] numbers);
@@ -136,6 +138,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @param _maxNumberTicketsPerBuy Maximum number of tickets that can be purchased
      * @param _pricePerTicket Price per ticket
      * @param _treasuryFeePercent Treasury fee
+     * @param _amountInjectNextRoundPercent Amount inject for next round
      * @dev Callable by operator
      */
     function addLottery(
@@ -145,11 +148,12 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         uint32 _numberOfItems,
         uint32 _minValuePerItem,
         uint32 _maxValuePerItem,
-        uint[] calldata _periodDays,
+        uint[] memory _periodDays,
         uint _periodHourOfDays,
         uint32 _maxNumberTicketsPerBuy,
         uint256 _pricePerTicket,
-        uint32 _treasuryFeePercent
+        uint32 _treasuryFeePercent,
+        uint32 _amountInjectNextRoundPercent
     ) external override onlyOperator {
         require(bytes(_lotteryId).length > 0, ERROR_INVALID_LOTTERY_ID);
         require(bytes(_picture).length > 0, ERROR_INVALID_LOTTERY_PICTURE);
@@ -179,6 +183,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             maxNumberTicketsPerBuy: _maxNumberTicketsPerBuy,
             pricePerTicket: _pricePerTicket,
             treasuryFeePercent: _treasuryFeePercent,
+            amountInjectNextRoundPercent: _amountInjectNextRoundPercent,
             totalPrize: 0,
             totalTickets: 0
         });
@@ -189,24 +194,42 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     /**
      * @notice Add more rule reward for lottery payout. Only call when deploying smart contact for the first time
      * @param _lotteryId Lottery id
-     * @param matchNumber Number match
-     * @param rewardUnit Reward unit
-     * @param rewardValue Reward value per unit
+     * @param _matchNumber Number match
+     * @param _rewardUnit Reward unit
+     * @param _rewardValue Reward value per unit
      * @dev Callable by operator
      */
     function addRule(
         string calldata _lotteryId,
-        uint32 matchNumber,
-        RewardUnit rewardUnit,
-        uint256 rewardValue
+        uint32 _matchNumber,
+        RewardUnit _rewardUnit,
+        uint256 _rewardValue
     ) external override onlyOperator {
-        require(bytes(_lotteryId).length > 0, ERROR_INVALID_LOTTERY_ID);
-        require(matchNumber > 0, ERROR_INVALID_RULE_MATCH_NUMBER);
-        require(rewardValue > 0, ERROR_INVALID_RULE_REWARD_VALUE);
+        _addRewardRule(_lotteryId, _matchNumber, _rewardUnit, _rewardValue);
+    }
 
-        rulesPerLotteryId[_lotteryId].push(
-            Rule({ matchNumber: matchNumber, rewardUnit: rewardUnit, rewardValue: rewardValue })
+    /**
+     * @notice Add many rules reward for lottery payout. Only call when deploying smart contact for the first time
+     * @param _lotteryId Lottery id
+     * @param _matchNumbers Number match
+     * @param _rewardUnits Reward unit
+     * @param _rewardValues Reward value per unit
+     * @dev Callable by operator
+     */
+    function addRewardRules(
+        string calldata _lotteryId,
+        uint32[] calldata _matchNumbers,
+        RewardUnit[] calldata _rewardUnits,
+        uint256[] calldata _rewardValues
+    ) external override onlyOperator {
+        require(
+            _matchNumbers.length == _rewardUnits.length && _rewardUnits.length == _rewardValues.length,
+            ERROR_INVALID_RULES
         );
+
+        for (uint i = 0; i < _matchNumbers.length; i++) {
+            _addRewardRule(_lotteryId, _matchNumbers[i], _rewardUnits[i], _rewardValues[i]);
+        }
     }
 
     /**
@@ -369,6 +392,30 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     }
 
     /**
+     * @notice Add more rule reward for lottery payout. Only call when deploying smart contact for the first time
+     * @param _lotteryId Lottery id
+     * @param _matchNumber Number match
+     * @param _rewardUnit Reward unit
+     * @param _rewardValue Reward value per unit
+     * @dev Callable by internal
+     */
+    function _addRewardRule(
+        string calldata _lotteryId,
+        uint32 _matchNumber,
+        RewardUnit _rewardUnit,
+        uint256 _rewardValue
+    ) internal {
+        require(bytes(_lotteryId).length > 0, ERROR_INVALID_LOTTERY_ID);
+        require(_matchNumber > 0, ERROR_INVALID_RULE_MATCH_NUMBER);
+        require(_rewardValue > 0, ERROR_INVALID_RULE_REWARD_VALUE);
+
+        rulesPerLotteryId[_lotteryId].push(
+            Rule({ matchNumber: _matchNumber, rewardUnit: _rewardUnit, rewardValue: _rewardValue })
+        );
+        emit NewRewardRule(_lotteryId, _matchNumber, _rewardUnit, _rewardValue);
+    }
+
+    /**
      *
      * @notice Check array of numbers is valid or not
      * @param _numbers Array of numbers need check in range LOTTERY require
@@ -406,7 +453,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @param _str1 String 1
      * @param _str2 String 2
      */
-    function _compareTwoStrings(string memory _str1, string memory _str2) public pure returns (bool) {
+    function _compareTwoStrings(string memory _str1, string memory _str2) internal pure returns (bool) {
         if (bytes(_str1).length != bytes(_str2).length) {
             return false;
         }

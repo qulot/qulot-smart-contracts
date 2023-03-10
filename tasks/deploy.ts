@@ -1,8 +1,12 @@
-import { ethers, network } from "hardhat";
+import { task } from "hardhat/config";
+import type { TaskArguments } from "hardhat/types";
 
 import { getEnvByNetwork } from "../utils/env";
 
-async function main() {
+task("deploy", "Deploy the Qulot lottery contract to the network").setAction(async function (
+  taskArguments: TaskArguments,
+  { ethers, network },
+) {
   const vrfCoordinator = getEnvByNetwork("VRF_COORDINATOR", network.name);
   const vrfSubscriptionId = getEnvByNetwork("VRF_SUBSCRIPTION_ID", network.name);
   const tokenAddress = getEnvByNetwork("TOKEN_ADDRESS", network.name);
@@ -37,11 +41,4 @@ async function main() {
       treasuryAddress,
     });
   }
-}
-
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
 });

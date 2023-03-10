@@ -4,6 +4,10 @@ import type { HardhatUserConfig } from "hardhat/config";
 import type { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
+import "./tasks/deploy";
+import "./tasks/init";
+import { getEnvByNetwork } from "./utils/env";
+
 const dotenvConfigPath: string = process.env.DOTENV_CONFIG_PATH || "./.env";
 dotenvConfig({ path: resolve(__dirname, dotenvConfigPath) });
 
@@ -19,6 +23,7 @@ if (!infuraApiKey) {
 }
 
 const chainIds = {
+  sepolia: 11155111,
   bsc: 56,
   hardhat: 31337,
   "polygon-mainnet": 137,
@@ -34,7 +39,7 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
     default:
       jsonRpcUrl = "https://" + chain + ".infura.io/v3/" + infuraApiKey;
   }
-  return {
+  const networkUserConfig: NetworkUserConfig = {
     accounts: {
       count: 10,
       mnemonic,
@@ -43,10 +48,23 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
     chainId: chainIds[chain],
     url: jsonRpcUrl,
   };
+
+  const ownerPrivateKey = getEnvByNetwork("OWNER_PRIVATE_KEY", chain);
+  const operatorPrivateKey = getEnvByNetwork("OPERATOR_PRIVATE_KEY", chain);
+  if (ownerPrivateKey && operatorPrivateKey) {
+    networkUserConfig.accounts = [ownerPrivateKey, operatorPrivateKey];
+  }
+
+  return networkUserConfig;
 }
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
+  etherscan: {
+    apiKey: {
+      sepolia: process.env.ETHERSCAN_API_KEY || "",
+    },
+  },
   networks: {
     hardhat: {
       accounts: {
@@ -54,9 +72,10 @@ const config: HardhatUserConfig = {
       },
       chainId: chainIds.hardhat,
     },
+    sepolia: getChainConfig("sepolia"),
+    // "polygon-mumbai": getChainConfig("polygon-mumbai"),
     // bsc: getChainConfig("bsc"),
     // "polygon-mainnet": getChainConfig("polygon-mainnet"),
-    "polygon-mumbai": getChainConfig("polygon-mumbai"),
   },
   paths: {
     artifacts: "./artifacts",
@@ -76,7 +95,7 @@ const config: HardhatUserConfig = {
       // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
-        runs: 800,
+        runs: 2000,
       },
     },
   },

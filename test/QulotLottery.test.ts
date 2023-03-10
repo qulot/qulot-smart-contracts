@@ -1,10 +1,11 @@
-import { QulotLottery } from "@/types";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { parseEther } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import moment from "moment";
+
+import { QulotLottery } from "../types";
 
 describe("contracts/QulotLottery", function () {
   async function deployQulotLotteryFixture() {
@@ -37,7 +38,7 @@ describe("contracts/QulotLottery", function () {
             .connect(operatorAccount)
             .addLottery(
               "",
-              "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+              "https://cdn.qulot.io/img/product-megaq.png",
               "LiteQ",
               "3",
               "1",
@@ -46,6 +47,7 @@ describe("contracts/QulotLottery", function () {
               "18",
               "10000",
               parseEther("1.0"),
+              "10",
               "10",
             ),
         ).to.revertedWith("ERROR_INVALID_LOTTERY_ID");
@@ -70,6 +72,7 @@ describe("contracts/QulotLottery", function () {
               "10000",
               parseEther("1.0"),
               "10",
+              "10",
             ),
         ).to.revertedWith("ERROR_INVALID_LOTTERY_PICTURE");
       });
@@ -83,7 +86,7 @@ describe("contracts/QulotLottery", function () {
             .connect(operatorAccount)
             .addLottery(
               "liteq",
-              "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+              "https://cdn.qulot.io/img/product-megaq.png",
               "",
               "3",
               "1",
@@ -92,6 +95,7 @@ describe("contracts/QulotLottery", function () {
               "18",
               "10000",
               parseEther("1.0"),
+              "10",
               "10",
             ),
         ).to.revertedWith("ERROR_INVALID_LOTTERY_VERBOSE_NAME");
@@ -106,7 +110,7 @@ describe("contracts/QulotLottery", function () {
             .connect(operatorAccount)
             .addLottery(
               "liteq",
-              "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+              "https://cdn.qulot.io/img/product-megaq.png",
               "LiteQ",
               "0",
               "1",
@@ -115,6 +119,7 @@ describe("contracts/QulotLottery", function () {
               "18",
               "10000",
               parseEther("1.0"),
+              "10",
               "10",
             ),
         ).to.revertedWith("ERROR_INVALID_LOTTERY_NUMBER_OF_ITEMS");
@@ -125,7 +130,7 @@ describe("contracts/QulotLottery", function () {
             .connect(operatorAccount)
             .addLottery(
               "liteq",
-              "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+              "https://cdn.qulot.io/img/product-megaq.png",
               "LiteQ",
               "3",
               "0",
@@ -134,6 +139,7 @@ describe("contracts/QulotLottery", function () {
               "18",
               "10000",
               parseEther("1.0"),
+              "10",
               "10",
             ),
         ).to.revertedWith("ERROR_INVALID_LOTTERY_MIN_VALUE_PER_ITEMS");
@@ -144,7 +150,7 @@ describe("contracts/QulotLottery", function () {
             .connect(operatorAccount)
             .addLottery(
               "liteq",
-              "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+              "https://cdn.qulot.io/img/product-megaq.png",
               "LiteQ",
               "3",
               "1",
@@ -153,6 +159,7 @@ describe("contracts/QulotLottery", function () {
               "18",
               "10000",
               parseEther("1.0"),
+              "10",
               "10",
             ),
         ).to.revertedWith("ERROR_INVALID_LOTTERY_MAX_VALUE_PER_ITEMS");
@@ -167,7 +174,7 @@ describe("contracts/QulotLottery", function () {
             .connect(operatorAccount)
             .addLottery(
               "liteq",
-              "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+              "https://cdn.qulot.io/img/product-megaq.png",
               "LiteQ",
               "3",
               "1",
@@ -176,6 +183,7 @@ describe("contracts/QulotLottery", function () {
               "18",
               "10000",
               parseEther("1.0"),
+              "10",
               "10",
             ),
         ).to.revertedWith("ERROR_INVALID_LOTTERY_PERIOD_DAYS");
@@ -186,7 +194,7 @@ describe("contracts/QulotLottery", function () {
             .connect(operatorAccount)
             .addLottery(
               "liteq",
-              "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+              "https://cdn.qulot.io/img/product-megaq.png",
               "LiteQ",
               "3",
               "1",
@@ -195,6 +203,7 @@ describe("contracts/QulotLottery", function () {
               "25",
               "10000",
               parseEther("1.0"),
+              "10",
               "10",
             ),
         ).to.revertedWith("ERROR_INVALID_LOTTERY_PERIOD_HOUR_OF_DAYS");
@@ -208,7 +217,7 @@ describe("contracts/QulotLottery", function () {
             .connect(operatorAccount)
             .addLottery(
               "liteq",
-              "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+              "https://cdn.qulot.io/img/product-megaq.png",
               "LiteQ",
               "3",
               "1",
@@ -217,6 +226,7 @@ describe("contracts/QulotLottery", function () {
               "24",
               "10000",
               parseEther("0"),
+              "10",
               "10",
             ),
         ).to.revertedWith("ERROR_INVALID_LOTTERY_PRICE_PER_TICKET");
@@ -235,7 +245,7 @@ describe("contracts/QulotLottery", function () {
             .connect(operatorAccount)
             .addLottery(
               "liteq",
-              "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+              "https://cdn.qulot.io/img/product-megaq.png",
               "LiteQ",
               "3",
               "1",
@@ -244,6 +254,7 @@ describe("contracts/QulotLottery", function () {
               "24",
               "10000",
               parseEther("1"),
+              "10",
               "10",
             ),
         ).to.revertedWith("ERROR_ONLY_OPERATOR");
@@ -259,7 +270,7 @@ describe("contracts/QulotLottery", function () {
           .connect(operatorAccount)
           .addLottery(
             "liteq",
-            "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+            "https://cdn.qulot.io/img/product-megaq.png",
             "LiteQ",
             "3",
             "1",
@@ -269,6 +280,7 @@ describe("contracts/QulotLottery", function () {
             "10000",
             parseEther("1"),
             "10",
+            "10",
           );
 
         // Register new lottery again, Expect error lottery already exists
@@ -277,7 +289,7 @@ describe("contracts/QulotLottery", function () {
             .connect(operatorAccount)
             .addLottery(
               "liteq",
-              "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+              "https://cdn.qulot.io/img/product-megaq.png",
               "LiteQ",
               "3",
               "1",
@@ -286,6 +298,7 @@ describe("contracts/QulotLottery", function () {
               "24",
               "10000",
               parseEther("1"),
+              "10",
               "10",
             ),
         ).to.revertedWith("ERROR_LOTTERY_ALREADY_EXISTS");
@@ -299,7 +312,7 @@ describe("contracts/QulotLottery", function () {
           .connect(operatorAccount)
           .addLottery(
             "liteq",
-            "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+            "https://cdn.qulot.io/img/product-megaq.png",
             "LiteQ",
             "3",
             "1",
@@ -309,12 +322,13 @@ describe("contracts/QulotLottery", function () {
             "10000",
             parseEther("1"),
             "10",
+            "10",
           );
 
         // Register new lottery again, Expect error lottery already exists
         const liteq = await qulotLottery.lotteries("liteq");
         await expect(liteq).to.an("array").that.includes("LiteQ");
-        expect(liteq).to.an("array").that.includes("ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png");
+        expect(liteq).to.an("array").that.includes("https://cdn.qulot.io/img/product-megaq.png");
       });
     });
 
@@ -328,7 +342,7 @@ describe("contracts/QulotLottery", function () {
             .connect(operatorAccount)
             .addLottery(
               "liteq",
-              "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+              "https://cdn.qulot.io/img/product-megaq.png",
               "LiteQ",
               "3",
               "1",
@@ -337,6 +351,7 @@ describe("contracts/QulotLottery", function () {
               "24",
               "10000",
               parseEther("1"),
+              "10",
               "10",
             ),
         )
@@ -401,13 +416,65 @@ describe("contracts/QulotLottery", function () {
     });
   });
 
+  describe("addRewardRules", function () {
+    describe("Validations", function () {
+      it("Should fail if invalid rules array", async function () {
+        const { qulotLottery, operatorAccount } = await loadFixture(deployQulotLotteryFixture);
+
+        // Test invalid lottery id
+        await expect(
+          qulotLottery.connect(operatorAccount).addRewardRules("", ["2"], ["0", "0"], ["40", "50"]),
+        ).to.revertedWith("ERROR_INVALID_RULES");
+      });
+    });
+
+    describe("Modifiers", function () {
+      it("Should fail if caller is not operator", async function () {
+        const { qulotLottery, operatorAccount, otherAccount } = await loadFixture(deployQulotLotteryFixture);
+
+        await qulotLottery.setOperatorAddress(otherAccount.address);
+
+        // Register new lottery again, Expect error lottery already exists
+        await expect(
+          qulotLottery.connect(operatorAccount).addRewardRules("liteq", ["1", "2"], ["0", "0"], ["40", "50"]),
+        ).to.revertedWith("ERROR_ONLY_OPERATOR");
+      });
+    });
+
+    describe("Data", function () {
+      it("Will match all if adding new rules is successful", async function () {
+        const { qulotLottery, operatorAccount } = await loadFixture(deployQulotLotteryFixture);
+        await qulotLottery.connect(operatorAccount).addRewardRules("liteq", ["1", "2"], ["0", "0"], ["40", "50"]);
+        const ruleMatch1 = await qulotLottery.rulesPerLotteryId("liteq", 0);
+        expect(ruleMatch1.matchNumber).to.equal(1);
+        expect(ruleMatch1.rewardUnit).to.equal(0);
+        expect(ruleMatch1.rewardValue).to.equal("40");
+        const ruleMatch2 = await qulotLottery.rulesPerLotteryId("liteq", 1);
+        expect(ruleMatch2.matchNumber).to.equal(2);
+        expect(ruleMatch2.rewardUnit).to.equal(0);
+        expect(ruleMatch2.rewardValue).to.equal("50");
+      });
+    });
+
+    describe("Events", function () {
+      it("Should emit an event on new rules", async function () {
+        const { qulotLottery, operatorAccount } = await loadFixture(deployQulotLotteryFixture);
+
+        // Register new lottery again, Expect error lottery already exists
+        await expect(
+          qulotLottery.connect(operatorAccount).addRewardRules("liteq", ["1", "2"], ["0", "0"], ["40", "50"]),
+        ).to.emit(qulotLottery, "NewRewardRule");
+      });
+    });
+  });
+
   describe("open", function () {
     const initLottery = async (qulotLottery: QulotLottery, account: SignerWithAddress) => {
       qulotLottery = await qulotLottery.connect(account);
 
       await qulotLottery.addLottery(
         "liteq",
-        "ipfs://QmeMHMZVXQCWTjiMmQeQ3g1cQ5FHz5Yypf9wsBW8anR1RR/0.png",
+        "https://cdn.qulot.io/img/product-megaq.png",
         "LiteQ",
         "3",
         "1",
@@ -416,6 +483,7 @@ describe("contracts/QulotLottery", function () {
         "24",
         "10000",
         parseEther("1"),
+        "10",
         "10",
       );
 

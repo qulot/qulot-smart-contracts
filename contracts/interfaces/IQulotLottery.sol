@@ -15,7 +15,7 @@ interface IQulotLottery {
 
     /**
      *
-     * @notice New lottery registration. Only call when deploying smart contact for the first time
+     * @notice Add new lottery. Only call when deploying smart contact for the first time
      * @param _lotteryId lottery id
      * @param _picture Lottery picture
      * @param _verboseName Verbose name of lottery
@@ -27,35 +27,52 @@ interface IQulotLottery {
      * @param _maxNumberTicketsPerBuy Maximum number of tickets that can be purchased
      * @param _pricePerTicket Price per ticket
      * @param _treasuryFeePercent Treasury fee
+     * @param _amountInjectNextRoundPercent Amount inject for next round
      * @dev Callable by operator
      */
     function addLottery(
-        string calldata _lotteryId,
-        string calldata _picture,
-        string calldata _verboseName,
+        string memory _lotteryId,
+        string memory _picture,
+        string memory _verboseName,
         uint32 _numberOfItems,
         uint32 _minValuePerItem,
         uint32 _maxValuePerItem,
-        uint[] calldata _periodDays,
+        uint[] memory _periodDays,
         uint _periodHourOfDays,
         uint32 _maxNumberTicketsPerBuy,
         uint256 _pricePerTicket,
-        uint32 _treasuryFeePercent
+        uint32 _treasuryFeePercent,
+        uint32 _amountInjectNextRoundPercent
     ) external;
 
     /**
      * @notice Add more rule reward for lottery payout. Only call when deploying smart contact for the first time
      * @param _lotteryId Lottery id
-     * @param matchNumber Number match
-     * @param rewardUnit Reward unit
-     * @param rewardValue Reward value per unit
+     * @param _matchNumber Number match
+     * @param _rewardUnit Reward unit
+     * @param _rewardValue Reward value per unit
      * @dev Callable by operator
      */
     function addRule(
         string calldata _lotteryId,
-        uint32 matchNumber,
-        RewardUnit rewardUnit,
-        uint256 rewardValue
+        uint32 _matchNumber,
+        RewardUnit _rewardUnit,
+        uint256 _rewardValue
+    ) external;
+
+    /**
+     * @notice Add more rule reward for lottery payout. Only call when deploying smart contact for the first time
+     * @param _lotteryId Lottery id
+     * @param _matchNumbers Number match
+     * @param _rewardUnits Reward unit
+     * @param _rewardValues Reward value per unit
+     * @dev Callable by operator
+     */
+    function addRewardRules(
+        string calldata _lotteryId,
+        uint32[] calldata _matchNumbers,
+        RewardUnit[] calldata _rewardUnits,
+        uint256[] calldata _rewardValues
     ) external;
 
     /**

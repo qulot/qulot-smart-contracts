@@ -18,7 +18,7 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
     struct RequestStatus {
         bool fulfilled; // whether the request has been successfully fulfilled
         bool exists; // whether a requestId exists
-        uint256 sessionId;
+        uint256 roundId;
         uint32 numbersOfItems;
         uint32 minValuePerItems;
         uint32 maxValuePerItems;
@@ -47,7 +47,7 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
     uint256 private latestRequestId;
 
     mapping(uint256 => RequestStatus) private requests; /* requestId --> requestStatus */
-    mapping(uint256 => RequestStatus) private requestsBySessionId; /* sessionId --> requestStatus */
+    mapping(uint256 => RequestStatus) private requestsByroundId; /* roundId --> requestStatus */
 
     VRFCoordinatorV2Interface private coordinator;
     // ChainLink VRF subscription id
@@ -84,13 +84,13 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
 
     /* #region Methods */
     /**
-     * @param _sessionId Request id combine lotteryProductId and lotterySessionId
+     * @param _roundId Request id combine lotteryProductId and lotteryroundId
      * @param _numbersOfItems Number of items
      * @param _minValuePerItems Min value per items
      * @param _maxValuePerItems Max value per items
      */
     function requestRandomNumbers(
-        uint256 _sessionId,
+        uint256 _roundId,
         uint32 _numbersOfItems,
         uint32 _minValuePerItems,
         uint32 _maxValuePerItems
@@ -108,7 +108,7 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
             _numbersOfItems
         );
         requests[requestId] = RequestStatus({
-            sessionId: _sessionId,
+            roundId: _roundId,
             numbersOfItems: _numbersOfItems,
             minValuePerItems: _minValuePerItems,
             maxValuePerItems: _maxValuePerItems,
@@ -116,18 +116,18 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
             fulfilled: false,
             results: new uint32[](_numbersOfItems)
         });
-        requestsBySessionId[_sessionId] = requests[requestId];
+        requestsByroundId[_roundId] = requests[requestId];
         requestIds.push(requestId);
         latestRequestId = requestId;
     }
 
     /**
-     * @param _sessionId Request id combine lotteryProductId and lotterySessionId
+     * @param _roundId Request id combine lotteryProductId and lotteryroundId
      * @notice View random result
      */
-    function getRandomResult(uint256 _sessionId) external view override returns (uint32[] memory) {
-        require(requestsBySessionId[_sessionId].exists, ERROR_RESULT_NOT_FOUND);
-        return requestsBySessionId[_sessionId].results;
+    function getRandomResult(uint256 _roundId) external view override returns (uint32[] memory) {
+        require(requestsByroundId[_roundId].exists, ERROR_RESULT_NOT_FOUND);
+        return requestsByroundId[_roundId].results;
     }
 
     /**

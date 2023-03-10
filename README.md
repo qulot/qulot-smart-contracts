@@ -65,3 +65,23 @@ Generate the code coverage report:
 ```sh
 $ yarn coverage
 ```
+
+### Deploy, Init And Verify Contract
+
+Deploy the contracts to network:
+
+```sh
+$ yarn deploy:sepolia
+```
+
+Data initialization for smart contract:
+
+```sh
+$ npx hardhat init --network sepolia --address <qulot-lottery-address>
+```
+
+Verifying deployed contracts:
+
+```sh
+$ npx hardhat verify --network sepolia <address> <argument 1> <argument 2>
+```
