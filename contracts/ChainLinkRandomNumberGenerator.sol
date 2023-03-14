@@ -158,7 +158,7 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
      * @notice Set the address for the Qulot
      * @param _qulotLottery: address of the Qulot lottery
      */
-    function setLotteryAddress(address _qulotLottery) external override onlyOwner {
+    function setQulotLottery(address _qulotLottery) external override onlyOwner {
         qulotLotteryAddress = _qulotLottery;
     }
 

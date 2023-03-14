@@ -7,7 +7,7 @@ import { inspect } from "util";
 import lotteriesInitData from "../data/lotteries.json";
 import { Lottery } from "../typings/lottery";
 
-task("init", "First init data for Qulot lottery after deployed")
+task("init:QulotLottery", "First init data for Qulot lottery after deployed")
   .addParam("address", "Qulot lottery contract address")
   .setAction(async function (taskArguments: TaskArguments, { ethers, network }) {
     // Get operator signer
@@ -21,7 +21,7 @@ task("init", "First init data for Qulot lottery after deployed")
       const qulotLottery = await ethers.getContractAt("QulotLottery", taskArguments.address, operator);
       const lotteries = lotteriesInitData as Lottery[];
       for (const lottery of lotteries) {
-        console.log(`Add lottery id: ${lottery.id}, data: ${inspect(lottery)}`);
+        console.log(`Add lottery id: ${lottery.id}`);
         const addLotteryTx = await qulotLottery.addLottery(
           lottery.id,
           lottery.picture,

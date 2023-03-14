@@ -39,7 +39,7 @@ contract MockRandomNumberGenerator is IRandomNumberGenerator, Ownable {
      * @notice Set the address for the Qulot
      * @param _qulotLottery: address of the Qulot lottery
      */
-    function setLotteryAddress(address _qulotLottery) external override {
+    function setQulotLottery(address _qulotLottery) external override {
         qulotLottery = _qulotLottery;
     }
 }

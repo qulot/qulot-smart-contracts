@@ -5,7 +5,8 @@ import type { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
 import "./tasks/deploy";
-import "./tasks/init";
+import "./tasks/initQulotAutomationTrigger";
+import "./tasks/initQulotLottery";
 import { getEnvByNetwork } from "./utils/env";
 
 const dotenvConfigPath: string = process.env.DOTENV_CONFIG_PATH || "./.env";
@@ -51,8 +52,9 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
 
   const ownerPrivateKey = getEnvByNetwork("OWNER_PRIVATE_KEY", chain);
   const operatorPrivateKey = getEnvByNetwork("OPERATOR_PRIVATE_KEY", chain);
-  if (ownerPrivateKey && operatorPrivateKey) {
-    networkUserConfig.accounts = [ownerPrivateKey, operatorPrivateKey];
+  const treasuryPrivateKey = getEnvByNetwork("TREASURY_PRIVATE_KEY", chain);
+  if (ownerPrivateKey && operatorPrivateKey && treasuryPrivateKey) {
+    networkUserConfig.accounts = [`0x${ownerPrivateKey}`, `0x${operatorPrivateKey}`, `0x${treasuryPrivateKey}`];
   }
 
   return networkUserConfig;

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { RewardUnit } from "../lib/QulotEnums.sol";
-import { Lottery } from "../lib/QulotStructs.sol";
+import { RewardUnit } from "../lib/QulotLotteryEnums.sol";
+import { Lottery, Round, Ticket } from "../lib/QulotLotteryStructs.sol";
 
 interface IQulotLottery {
     /**
@@ -44,32 +44,6 @@ interface IQulotLottery {
         uint256 _pricePerTicket,
         uint32 _treasuryFeePercent,
         uint32 _amountInjectNextRoundPercent
-    ) external;
-
-    /**
-     * @notice Return a list of lottery ids
-     */
-    function getLotteryIds() external view returns (string[] memory lotteryIds);
-
-    /**
-     * @notice Return lottery by id
-     * @param _lotteryId Id of lottery
-     */
-    function getLottery(string calldata _lotteryId) external view returns (Lottery memory lottery);
-
-    /**
-     * @notice Add more rule reward for lottery payout. Only call when deploying smart contact for the first time
-     * @param _lotteryId Lottery id
-     * @param _matchNumber Number match
-     * @param _rewardUnit Reward unit
-     * @param _rewardValue Reward value per unit
-     * @dev Callable by operator
-     */
-    function addRule(
-        string calldata _lotteryId,
-        uint32 _matchNumber,
-        RewardUnit _rewardUnit,
-        uint256 _rewardValue
     ) external;
 
     /**
@@ -118,4 +92,37 @@ interface IQulotLottery {
      * @dev Callable by operator
      */
     function draw(string calldata _lotteryId) external;
+
+    /**
+     * @notice Return a list of lottery ids
+     */
+    function getLotteryIds() external view returns (string[] memory lotteryIds);
+
+    /**
+     * @notice Return lottery by id
+     * @param _lotteryId Id of lottery
+     */
+    function getLottery(string calldata _lotteryId) external view returns (Lottery memory lottery);
+
+    /**
+     * @notice Return a list of round ids
+     */
+    function getRoundIds() external view returns (uint256[] memory roundIds);
+
+    /**
+     * @notice Return round by id
+     * @param _roundId Id of round
+     */
+    function getRound(uint256 _roundId) external view returns (Round memory round);
+
+    /**
+     * @notice Return a list of ticket ids
+     */
+    function getTicketIds() external view returns (uint256[] memory ticketIds);
+
+    /**
+     * @notice Return ticket by id
+     * @param _ticketId Id of round
+     */
+    function getTicket(uint256 _ticketId) external view returns (Ticket memory ticket);
 }
