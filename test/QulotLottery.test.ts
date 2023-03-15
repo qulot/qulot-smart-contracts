@@ -533,5 +533,16 @@ describe("contracts/QulotLottery", function () {
         expect(await qulotLottery.close("liteq")).to.revertedWith("ERROR_NOT_TIME_CLOSE_LOTTERY");
       });
     });
+
+    describe("Events", function () {
+      it("Should emit an event on close round", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        const operatorAccount = fixture.operatorAccount;
+        let qulotLottery = fixture.qulotLottery;
+        qulotLottery = await initLottery(qulotLottery, operatorAccount);
+        await qulotLottery.open("liteq", "1");
+        await expect(qulotLottery.close("liteq")).to.emit(qulotLottery, "RoundClose");
+      });
+    });
   });
 });
