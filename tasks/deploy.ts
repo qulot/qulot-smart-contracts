@@ -20,7 +20,7 @@ task("deploy", "Deploy the Qulot lottery contract to the network").setAction(asy
       vrfCoordinator,
       vrfSubscriptionId,
     );
-    await chainLinkRandomNumberGenerator.deployed();
+    await chainLinkRandomNumberGenerator.deployTransaction.wait();
     await run("verify:verify", {
       address: chainLinkRandomNumberGenerator.address,
       constructorArguments: [vrfCoordinator, vrfSubscriptionId],
@@ -31,7 +31,7 @@ task("deploy", "Deploy the Qulot lottery contract to the network").setAction(asy
     console.warn("Trying deploy QulotAutomationTrigger contract...");
     const QulotAutomationTrigger = await ethers.getContractFactory("QulotAutomationTrigger");
     const qulotAutomationTrigger = await QulotAutomationTrigger.deploy();
-    await qulotAutomationTrigger.deployed();
+    await qulotAutomationTrigger.deployTransaction.wait();
     await run("verify:verify", {
       address: qulotAutomationTrigger.address,
       constructorArguments: [],
@@ -42,7 +42,7 @@ task("deploy", "Deploy the Qulot lottery contract to the network").setAction(asy
     console.warn("Trying deploy QulotLottery contract...");
     const QulotLottery = await ethers.getContractFactory("QulotLottery");
     const qulotLottery = await QulotLottery.deploy(tokenAddress, chainLinkRandomNumberGenerator.address);
-    await qulotLottery.deployed();
+    await qulotLottery.deployTransaction.wait();
     await qulotLottery.setOperatorAddress(operator.address);
     await qulotLottery.setTreasuryAddress(treasury.address);
     await qulotLottery.setTriggerAddress(qulotAutomationTrigger.address);
@@ -54,7 +54,6 @@ task("deploy", "Deploy the Qulot lottery contract to the network").setAction(asy
 
     // Set lottery address for ChainLink random number contract
     await chainLinkRandomNumberGenerator.setQulotLottery(qulotLottery.address);
-    await qulotAutomationTrigger.setQulotLottery(qulotLottery.address);
     await qulotAutomationTrigger.setOperatorAddress(operator.address);
   } else {
     console.error(`Invalid environment variable for network deployment: ${network.name}`, {

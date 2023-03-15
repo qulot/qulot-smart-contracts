@@ -71,18 +71,18 @@ $ yarn coverage
 Deploy the contracts to network:
 
 ```sh
-$ yarn deploy:sepolia
+$ yarn deploy:goerli
 ```
 
 Data initialization for smart contract:
 
 ```sh
-$ npx hardhat init:QulotLottery --network sepolia --address <qulot-lottery-address>
-$ npx hardhat init:QulotAutomationTrigger --network sepolia --address <qulot-automation-trigger-address> --qulot-address <qulot-lottery-address>
+$ npx hardhat init:QulotLottery --network goerli --address <qulot-lottery-address>
+$ npx hardhat init:QulotAutomationTrigger --network goerli --address <qulot-automation-trigger-address> --qulot-address <qulot-lottery-address>
 ```
 
 Verifying deployed contracts:
 
 ```sh
-$ npx hardhat verify --network sepolia <address> <argument 1> <argument 2>
+$ npx hardhat verify --network goerli <address> <argument 1> <argument 2>
 ```

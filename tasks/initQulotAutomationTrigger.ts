@@ -45,11 +45,7 @@ task("init:QulotAutomationTrigger", "First init data for Qulot lottery after dep
 
     if (operator) {
       console.log(`Init Qulot automation trigger using operator address ${operator.address}`);
-      const qulotAutomationTrigger = await ethers.getContractAt(
-        "QulotAutomationTrigger",
-        taskArguments.address,
-        operator,
-      );
+      const qulotAutomationTrigger = await ethers.getContractAt("QulotAutomationTrigger", taskArguments.address, operator);
 
       const qulotLottery = await ethers.getContractAt("QulotLottery", taskArguments.qulotAddress);
       const lotteryIds = await qulotLottery.getLotteryIds();
