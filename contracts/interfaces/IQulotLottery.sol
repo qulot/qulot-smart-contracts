@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.6;
 
-import { RewardUnit } from "../lib/QulotEnums.sol";
+import { RewardUnit } from "../lib/QulotLotteryEnums.sol";
+import { Lottery, Round, Ticket } from "../lib/QulotLotteryStructs.sol";
 
 interface IQulotLottery {
     /**
@@ -15,7 +16,7 @@ interface IQulotLottery {
 
     /**
      *
-     * @notice New lottery registration. Only call when deploying smart contact for the first time
+     * @notice Add new lottery. Only call when deploying smart contact for the first time
      * @param _lotteryId lottery id
      * @param _picture Lottery picture
      * @param _verboseName Verbose name of lottery
@@ -27,35 +28,37 @@ interface IQulotLottery {
      * @param _maxNumberTicketsPerBuy Maximum number of tickets that can be purchased
      * @param _pricePerTicket Price per ticket
      * @param _treasuryFeePercent Treasury fee
+     * @param _amountInjectNextRoundPercent Amount inject for next round
      * @dev Callable by operator
      */
     function addLottery(
-        string calldata _lotteryId,
-        string calldata _picture,
-        string calldata _verboseName,
+        string memory _lotteryId,
+        string memory _picture,
+        string memory _verboseName,
         uint32 _numberOfItems,
         uint32 _minValuePerItem,
         uint32 _maxValuePerItem,
-        uint[] calldata _periodDays,
+        uint[] memory _periodDays,
         uint _periodHourOfDays,
         uint32 _maxNumberTicketsPerBuy,
         uint256 _pricePerTicket,
-        uint32 _treasuryFeePercent
+        uint32 _treasuryFeePercent,
+        uint32 _amountInjectNextRoundPercent
     ) external;
 
     /**
      * @notice Add more rule reward for lottery payout. Only call when deploying smart contact for the first time
      * @param _lotteryId Lottery id
-     * @param matchNumber Number match
-     * @param rewardUnit Reward unit
-     * @param rewardValue Reward value per unit
+     * @param _matchNumbers Number match
+     * @param _rewardUnits Reward unit
+     * @param _rewardValues Reward value per unit
      * @dev Callable by operator
      */
-    function addRule(
+    function addRewardRules(
         string calldata _lotteryId,
-        uint32 matchNumber,
-        RewardUnit rewardUnit,
-        uint256 rewardValue
+        uint32[] calldata _matchNumbers,
+        RewardUnit[] calldata _rewardUnits,
+        uint256[] calldata _rewardValues
     ) external;
 
     /**
@@ -89,4 +92,37 @@ interface IQulotLottery {
      * @dev Callable by operator
      */
     function draw(string calldata _lotteryId) external;
+
+    /**
+     * @notice Return a list of lottery ids
+     */
+    function getLotteryIds() external view returns (string[] memory lotteryIds);
+
+    /**
+     * @notice Return lottery by id
+     * @param _lotteryId Id of lottery
+     */
+    function getLottery(string calldata _lotteryId) external view returns (Lottery memory lottery);
+
+    /**
+     * @notice Return a list of round ids
+     */
+    function getRoundIds() external view returns (uint256[] memory roundIds);
+
+    /**
+     * @notice Return round by id
+     * @param _roundId Id of round
+     */
+    function getRound(uint256 _roundId) external view returns (Round memory round);
+
+    /**
+     * @notice Return a list of ticket ids
+     */
+    function getTicketIds() external view returns (uint256[] memory ticketIds);
+
+    /**
+     * @notice Return ticket by id
+     * @param _ticketId Id of round
+     */
+    function getTicket(uint256 _ticketId) external view returns (Ticket memory ticket);
 }

@@ -1,0 +1,33 @@
+[
+  {
+    "id": "liteq",
+    "verboseName": "LiteQ",
+    "picture": "https://cdn.qulot.io/img/product-megaq.png",
+    "numberOfItems": 3,
+    "minValuePerItem": 1,
+    "maxValuePerItem": 66,
+    "periodDays": [0, 1, 2, 3, 4, 5, 6],
+    "periodHourOfDays": 17,
+    "maxNumberTicketsPerBuy": 10000,
+    "pricePerTicket": 1,
+    "treasuryFeePercent": 10,
+    "amountInjectNextRoundPercent": 0,
+    "rewardRules": [
+      {
+        "matchNumber": 3,
+        "rewardUnit": 0,
+        "rewardValue": 50
+      },
+      {
+        "matchNumber": 2,
+        "rewardUnit": 0,
+        "rewardValue": 30
+      },
+      {
+        "matchNumber": 1,
+        "rewardUnit": 0,
+        "rewardValue": 20
+      }
+    ]
+  }
+]

@@ -65,3 +65,24 @@ Generate the code coverage report:
 ```sh
 $ yarn coverage
 ```
+
+### Deploy And Initialize Contracts
+
+Deploy the contracts to network:
+
+```sh
+$ yarn deploy:goerli
+```
+
+Data initialization for smart contract:
+
+```sh
+$ npx hardhat init:QulotLottery --network goerli --address <qulot-lottery-address>
+$ npx hardhat init:QulotAutomationTrigger --network goerli --address <qulot-automation-trigger-address> --qulot-address <qulot-lottery-address>
+```
+
+Verifying deployed contracts:
+
+```sh
+$ npx hardhat verify --network goerli <address> <argument 1> <argument 2>
+```
