@@ -12,11 +12,6 @@ import { getEnvByNetwork } from "./utils/env";
 const dotenvConfigPath: string = process.env.DOTENV_CONFIG_PATH || "./.env";
 dotenvConfig({ path: resolve(__dirname, dotenvConfigPath) });
 
-const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
-if (!infuraApiKey) {
-  throw new Error("Please set your INFURA_API_KEY in a .env file");
-}
-
 const chainIds = {
   goerli: 5,
   sepolia: 11155111,
@@ -32,8 +27,13 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
     case "bsc":
       jsonRpcUrl = "https://bsc-dataseed1.binance.org";
       break;
-    default:
+    default: {
+      const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
+      if (!infuraApiKey) {
+        throw new Error("Please set your INFURA_API_KEY in a .env file");
+      }
       jsonRpcUrl = "https://" + chain + ".infura.io/v3/" + infuraApiKey;
+    }
   }
   const networkUserConfig: NetworkUserConfig = {
     chainId: chainIds[chain],
