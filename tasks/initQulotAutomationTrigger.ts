@@ -7,6 +7,7 @@ enum JobType {
   TriggerOpenLottery,
   TriggerCloseLottery,
   TriggerDrawLottery,
+  TriggerRewardLottery,
 }
 
 type JobTypeKeys = keyof typeof JobType;
@@ -19,6 +20,8 @@ function getJobId(lotteryId: string, jobType: JobType) {
       return lotteryId + ":close";
     case JobType.TriggerDrawLottery:
       return lotteryId + ":draw";
+    case JobType.TriggerRewardLottery:
+      return lotteryId + ":reward";
   }
 }
 
@@ -28,8 +31,10 @@ function getJobCronSpec(periodDays: number[], periodHourOfDays: number, jobType:
       return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 0);
     case JobType.TriggerDrawLottery:
       return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 3);
-    case JobType.TriggerOpenLottery:
+    case JobType.TriggerRewardLottery:
       return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 5);
+    case JobType.TriggerOpenLottery:
+      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 7);
   }
 }
 

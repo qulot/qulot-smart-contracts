@@ -25,6 +25,7 @@ if (!infuraApiKey) {
 
 const chainIds = {
   goerli: 5,
+  sepolia: 11155111,
   bsc: 56,
   hardhat: 31337,
   "polygon-mainnet": 137,
@@ -65,6 +66,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       goerli: process.env.ETHERSCAN_API_KEY || "",
+      sepolia: process.env.ETHERSCAN_API_KEY || "",
     },
   },
   networks: {
@@ -75,6 +77,7 @@ const config: HardhatUserConfig = {
       chainId: chainIds.hardhat,
     },
     goerli: getChainConfig("goerli"),
+    sepolia: getChainConfig("sepolia"),
     // "polygon-mumbai": getChainConfig("polygon-mumbai"),
     // bsc: getChainConfig("bsc"),
     // "polygon-mainnet": getChainConfig("polygon-mainnet"),

@@ -9,4 +9,5 @@ struct TriggerJob {
     Spec cronSpec;
     uint256 lastRun;
     JobType jobType;
+    bool isExists;
 }

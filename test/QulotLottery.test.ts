@@ -30,20 +30,22 @@ describe("contracts/QulotLottery", function () {
   async function initLottery(qulotLottery: QulotLottery, account: SignerWithAddress) {
     qulotLottery = await qulotLottery.connect(account);
 
-    await qulotLottery.addLottery(
-      "liteq",
-      "https://cdn.qulot.io/img/product-megaq.png",
-      "LiteQ",
-      "3",
-      "1",
-      "66",
-      ["1", "2", "3", "4", "5", "6"],
-      "24",
-      "10000",
-      parseEther("1"),
-      "10",
-      "10",
-    );
+    await (
+      await qulotLottery.addLottery(
+        "liteq",
+        "https://cdn.qulot.io/img/product-megaq.png",
+        "LiteQ",
+        "3",
+        "1",
+        "66",
+        ["1", "2", "3", "4", "5", "6"],
+        "24",
+        "10000",
+        parseEther("1"),
+        "10",
+        "10",
+      )
+    ).wait();
 
     return qulotLottery;
   }

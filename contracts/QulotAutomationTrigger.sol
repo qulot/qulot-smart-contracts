@@ -23,17 +23,18 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
 
     string private constant ERROR_ONLY_OPERATOR = "ERROR_ONLY_OPERATOR";
     string private constant ERROR_INVALID_ZERO_ADDRESS = "ERROR_INVALID_ZERO_ADDRESS";
+    string private constant ERROR_INVALID_JOB_ID = "ERROR_INVALID_JOB_ID";
     string private constant ERROR_INVALID_LOTTERY_ID = "ERROR_INVALID_LOTTERY_ID";
-    string private constant ERROR_INVALID_JOB_ID = "ERROR_INVALID_LOTTERY_ID";
     string private constant ERROR_INVALID_JOB_CRON_SPEC = "ERROR_INVALID_JOB_CRON_SPEC";
+    string private constant ERROR_TRIGGER_JOB_ALREADY_EXISTS = "ERROR_TRIGGER_JOB_ALREADY_EXISTS";
 
     IQulotLottery public qulotLottery;
     // The lottery scheduler account used to run regular operations.
     address public operatorAddress;
 
     // Keep track of job id for a given jobId
-    mapping(string => TriggerJob) private _jobs;
-    string[] private _jobIds;
+    mapping(string => TriggerJob) private jobs;
+    string[] private jobIds;
 
     modifier onlyOperator() {
         require(msg.sender == operatorAddress, ERROR_ONLY_OPERATOR);
@@ -53,14 +54,14 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
     function checkUpkeep(
         bytes calldata /* checkData */
     ) external view override returns (bool upkeepNeeded, bytes memory performData) {
-        if (_jobIds.length == 0) {
+        if (jobIds.length == 0) {
             return (false, bytes(""));
         }
 
-        for (uint i = 0; i < _jobIds.length; i++) {
-            string memory jobId = _jobIds[i];
-            uint256 lastTick = _jobs[jobId].cronSpec.lastTick();
-            if (lastTick > _jobs[jobId].lastRun) {
+        for (uint i = 0; i < jobIds.length; i++) {
+            string memory jobId = jobIds[i];
+            uint256 lastTick = jobs[jobId].cronSpec.lastTick();
+            if (lastTick > jobs[jobId].lastRun) {
                 return (true, abi.encode(jobId, lastTick));
             }
         }
@@ -78,15 +79,17 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
     function performUpkeep(bytes calldata performData) external override {
         (string memory jobId, uint256 tickTime) = abi.decode(performData, (string, uint256));
         validate(jobId, tickTime);
-        _jobs[jobId].lastRun = block.timestamp;
+        jobs[jobId].lastRun = block.timestamp;
 
-        TriggerJob memory job = _jobs[jobId];
+        TriggerJob memory job = jobs[jobId];
         if (job.jobType == JobType.TriggerOpenLottery) {
             qulotLottery.open(job.lotteryId, job.cronSpec.nextTick());
         } else if (job.jobType == JobType.TriggerCloseLottery) {
             qulotLottery.close(job.lotteryId);
         } else if (job.jobType == JobType.TriggerDrawLottery) {
             qulotLottery.draw(job.lotteryId);
+        } else if (job.jobType == JobType.TriggerRewardLottery) {
+            qulotLottery.reward(job.lotteryId);
         }
     }
 
@@ -104,16 +107,18 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
         JobType _jobType
     ) external override onlyOperator {
         require(!String.isEmpty(_jobId), ERROR_INVALID_JOB_ID);
+        require(!jobs[_jobId].isExists, ERROR_TRIGGER_JOB_ALREADY_EXISTS);
         require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
         require(!String.isEmpty(_jobCronSpec), ERROR_INVALID_JOB_CRON_SPEC);
 
-        _jobs[_jobId] = TriggerJob({
+        jobs[_jobId] = TriggerJob({
             lotteryId: _lotteryId,
             cronSpec: Cron.toSpec(_jobCronSpec),
             jobType: _jobType,
-            lastRun: block.timestamp
+            lastRun: block.timestamp,
+            isExists: true
         });
-        _jobIds.push(_jobId);
+        jobIds.push(_jobId);
 
         emit NewTriggerJob(_jobId, _lotteryId, _jobType, _jobCronSpec);
     }
@@ -122,7 +127,7 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
      * @notice Return a list of job ids
      */
     function getJobIds() external view returns (string[] memory) {
-        return _jobIds;
+        return jobIds;
     }
 
     /**
@@ -130,7 +135,19 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
      * @param _jobId The id of the trigger job
      */
     function getJob(string memory _jobId) external view returns (TriggerJob memory) {
-        return _jobs[_jobId];
+        return jobs[_jobId];
+    }
+
+    /**
+     * @notice Return crontab, last tick, next tick by job id
+     * @param _jobId The id of the trigger job
+     */
+    function getJobTick(string memory _jobId) external view returns (string memory, uint256, uint256) {
+        return (
+            jobs[_jobId].cronSpec.toCronString(),
+            jobs[_jobId].cronSpec.lastTick(),
+            jobs[_jobId].cronSpec.nextTick()
+        );
     }
 
     /**
@@ -143,10 +160,10 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
         if (block.timestamp < _tickTime) {
             revert TickInFuture();
         }
-        if (_tickTime <= _jobs[_jobId].lastRun) {
+        if (_tickTime <= jobs[_jobId].lastRun) {
             revert TickTooOld();
         }
-        if (!Cron.matches(_jobs[_jobId].cronSpec, _tickTime)) {
+        if (!jobs[_jobId].cronSpec.matches(_tickTime)) {
             revert TickDoesntMatchSpec();
         }
     }
