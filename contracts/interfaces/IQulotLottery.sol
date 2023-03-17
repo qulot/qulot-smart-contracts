@@ -87,11 +87,19 @@ interface IQulotLottery {
 
     /**
      *
-     * @notice Start round by id
+     * @notice Draw round by id
      * @param _lotteryId lottery id
      * @dev Callable by operator
      */
     function draw(string calldata _lotteryId) external;
+
+    /**
+     *
+     * @notice Reward round by id
+     * @param _lotteryId round id
+     * @dev Callable by operator
+     */
+    function reward(string calldata _lotteryId) external;
 
     /**
      * @notice Return a list of lottery ids

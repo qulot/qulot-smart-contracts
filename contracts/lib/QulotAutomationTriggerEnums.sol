@@ -4,5 +4,11 @@ pragma solidity ^0.8.6;
 enum JobType {
     TriggerOpenLottery,
     TriggerCloseLottery,
-    TriggerDrawLottery
+    TriggerDrawLottery,
+    TriggerRewardLottery
+}
+
+enum JobStatus {
+    Success,
+    Error
 }
