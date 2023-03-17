@@ -448,7 +448,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             }
         }
 
-        amountInjectNextRound += rewardAmount;
+        amountTreasury += rewardAmount;
         amountInjectNextRoundPerLottery[_lotteryId] = amountInjectNextRound;
         // Transfer token to treasury address
         token.safeTransfer(treasuryAddress, amountTreasury);
