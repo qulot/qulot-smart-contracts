@@ -7,7 +7,7 @@ const WAIT_CONFIRMATION_BLOCKS = 4;
 
 task("deploy", "Deploy the Qulot lottery contract to the network").setAction(async function (
   taskArguments: TaskArguments,
-  { ethers, network, run },
+  { ethers, network },
 ) {
   const vrfCoordinator = getEnvByNetwork("VRF_COORDINATOR", network.name);
   const vrfSubscriptionId = getEnvByNetwork("VRF_SUBSCRIPTION_ID", network.name);
@@ -21,10 +21,6 @@ task("deploy", "Deploy the Qulot lottery contract to the network").setAction(asy
     const qulotAutomationTrigger = await QulotAutomationTrigger.deploy();
     await qulotAutomationTrigger.deployTransaction.wait(WAIT_CONFIRMATION_BLOCKS);
     console.log(`QulotAutomationTrigger deployed to: ${qulotAutomationTrigger.address}`);
-    // await run("verify:verify", {
-    //   address: qulotAutomationTrigger.address,
-    //   constructorArguments: [],
-    // });
 
     // Deploy ChainLink random number contract
     console.warn("Trying deploy ChainLinkRandomNumberGenerator contract...");
@@ -35,10 +31,6 @@ task("deploy", "Deploy the Qulot lottery contract to the network").setAction(asy
     );
     await chainLinkRandomNumberGenerator.deployTransaction.wait(WAIT_CONFIRMATION_BLOCKS);
     console.log(`ChainLinkRandomNumberGenerator deployed to: ${chainLinkRandomNumberGenerator.address}`);
-    // await run("verify:verify", {
-    //   address: chainLinkRandomNumberGenerator.address,
-    //   constructorArguments: [vrfCoordinator, vrfSubscriptionId],
-    // });
 
     // Deploy Qulot lottery contract
     console.warn("Trying deploy QulotLottery contract...");
@@ -49,14 +41,10 @@ task("deploy", "Deploy the Qulot lottery contract to the network").setAction(asy
     await qulotLottery.setTreasuryAddress(treasury.address);
     await qulotLottery.setTriggerAddress(qulotAutomationTrigger.address);
     console.log(`QulotLottery deployed to: ${qulotLottery.address}`);
-    // await run("verify:verify", {
-    //   address: qulotLottery.address,
-    //   constructorArguments: [tokenAddress, chainLinkRandomNumberGenerator.address],
-    // });
 
     // Set lottery address for ChainLink random number contract
-    await qulotAutomationTrigger.setOperatorAddress(operator.address);
     await chainLinkRandomNumberGenerator.setQulotLottery(qulotLottery.address);
+    await qulotAutomationTrigger.setOperatorAddress(operator.address);
     await qulotAutomationTrigger.setQulotLottery(qulotLottery.address);
   } else {
     console.error(`Invalid environment variable for network deployment: ${network.name}`, {

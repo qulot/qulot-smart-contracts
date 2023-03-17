@@ -20,6 +20,7 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
     error TickTooOld();
     error TickDoesntMatchSpec();
     event NewTriggerJob(string jobId, string lotteryId, JobType jobType, string cronSpec);
+    event PerformTriggerJob(string jobId, uint256 timestamp);
 
     string private constant ERROR_ONLY_OPERATOR = "ERROR_ONLY_OPERATOR";
     string private constant ERROR_INVALID_ZERO_ADDRESS = "ERROR_INVALID_ZERO_ADDRESS";
@@ -31,9 +32,11 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
     IQulotLottery public qulotLottery;
     // The lottery scheduler account used to run regular operations.
     address public operatorAddress;
+    mapping(string => uint256) public lastRuns;
 
     // Keep track of job id for a given jobId
     mapping(string => TriggerJob) private jobs;
+    mapping(string => Spec) private specs;
     string[] private jobIds;
 
     modifier onlyOperator() {
@@ -57,11 +60,10 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
         if (jobIds.length == 0) {
             return (false, bytes(""));
         }
-
         for (uint i = 0; i < jobIds.length; i++) {
             string memory jobId = jobIds[i];
-            uint256 lastTick = jobs[jobId].cronSpec.lastTick();
-            if (lastTick > jobs[jobId].lastRun) {
+            uint256 lastTick = specs[jobId].lastTick();
+            if (lastTick > lastRuns[jobId]) {
                 return (true, abi.encode(jobId, lastTick));
             }
         }
@@ -78,12 +80,24 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
      */
     function performUpkeep(bytes calldata performData) external override {
         (string memory jobId, uint256 tickTime) = abi.decode(performData, (string, uint256));
-        validate(jobId, tickTime);
-        jobs[jobId].lastRun = block.timestamp;
+
+        tickTime = tickTime - (tickTime % 60); // remove seconds from tick time
+        if (block.timestamp < tickTime) {
+            revert TickInFuture();
+        }
+        if (tickTime <= lastRuns[jobId]) {
+            revert TickTooOld();
+        }
+        if (!specs[jobId].matches(tickTime)) {
+            revert TickDoesntMatchSpec();
+        }
+
+        lastRuns[jobId] = block.timestamp;
+        emit PerformTriggerJob(jobId, block.timestamp);
 
         TriggerJob memory job = jobs[jobId];
         if (job.jobType == JobType.TriggerOpenLottery) {
-            qulotLottery.open(job.lotteryId, job.cronSpec.nextTick());
+            qulotLottery.open(job.lotteryId, specs[jobId].nextTick());
         } else if (job.jobType == JobType.TriggerCloseLottery) {
             qulotLottery.close(job.lotteryId);
         } else if (job.jobType == JobType.TriggerDrawLottery) {
@@ -111,14 +125,10 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
         require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
         require(!String.isEmpty(_jobCronSpec), ERROR_INVALID_JOB_CRON_SPEC);
 
-        jobs[_jobId] = TriggerJob({
-            lotteryId: _lotteryId,
-            cronSpec: Cron.toSpec(_jobCronSpec),
-            jobType: _jobType,
-            lastRun: block.timestamp,
-            isExists: true
-        });
+        jobs[_jobId] = TriggerJob({ lotteryId: _lotteryId, jobType: _jobType, isExists: true });
+        specs[_jobId] = Cron.toSpec(_jobCronSpec);
         jobIds.push(_jobId);
+        lastRuns[_jobId] = block.timestamp;
 
         emit NewTriggerJob(_jobId, _lotteryId, _jobType, _jobCronSpec);
     }
@@ -143,29 +153,7 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
      * @param _jobId The id of the trigger job
      */
     function getJobTick(string memory _jobId) external view returns (string memory, uint256, uint256) {
-        return (
-            jobs[_jobId].cronSpec.toCronString(),
-            jobs[_jobId].cronSpec.lastTick(),
-            jobs[_jobId].cronSpec.nextTick()
-        );
-    }
-
-    /**
-     * @notice Validates the input to performUpkeep
-     * @param _jobId The id of the trigger job
-     * @param _tickTime The observed tick time
-     */
-    function validate(string memory _jobId, uint256 _tickTime) internal view {
-        _tickTime = _tickTime - (_tickTime % 60); // remove seconds from tick time
-        if (block.timestamp < _tickTime) {
-            revert TickInFuture();
-        }
-        if (_tickTime <= jobs[_jobId].lastRun) {
-            revert TickTooOld();
-        }
-        if (!jobs[_jobId].cronSpec.matches(_tickTime)) {
-            revert TickDoesntMatchSpec();
-        }
+        return (specs[_jobId].toCronString(), specs[_jobId].lastTick(), specs[_jobId].nextTick());
     }
 
     /**

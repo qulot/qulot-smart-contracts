@@ -7,3 +7,8 @@ enum JobType {
     TriggerDrawLottery,
     TriggerRewardLottery
 }
+
+enum JobStatus {
+    Success,
+    Error
+}

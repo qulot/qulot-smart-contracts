@@ -416,35 +416,29 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             uint256 ticketId = ticketsPerRoundId[currentRoundId][ticketIndex];
             // Check if this ticket is eligible to win or not
             (bool isWin, uint matchRewardRule) = _checkIsWinTicket(ticketId, _lotteryId, currentRoundId);
-            if (!isWin) {
-                continue;
+            if (isWin) {
+                tickets[ticketId].winStatus = isWin;
+                tickets[ticketId].winRewardRule = matchRewardRule;
+                winnersPerRule[matchRewardRule] += 1;
             }
-            tickets[ticketId].winStatus = isWin;
-            tickets[ticketId].winRewardRule = matchRewardRule;
-            winnersPerRule[matchRewardRule] += 1;
         }
 
+        uint256[] memory rewardsAmountPerRule = new uint256[](rulesPerLotteryId[_lotteryId].length);
         for (uint ruleIndex = 0; ruleIndex < winnersPerRule.length; ruleIndex++) {
             uint winnerPerRule = winnersPerRule[ruleIndex];
-            if (winnerPerRule <= 0) {
-                continue;
+            if (winnerPerRule > 0) {
+                uint256 rewardAmountPerRule = _calculateRewardAmountPerRule(_lotteryId, ruleIndex, rewardAmount);
+                rewardAmount -= rewardAmountPerRule;
+                uint256 rewardAmountPerTicket = rewardAmountPerRule.div(winnerPerRule);
+                rewardsAmountPerRule[ruleIndex] = rewardAmountPerTicket;
             }
+        }
 
-            Rule memory rule = rulesPerLotteryId[_lotteryId][ruleIndex];
-            uint rewardAmountPerRule;
-            if (rule.rewardUnit == RewardUnit.Percent) {
-                rewardAmountPerRule = rewardAmount - _percentageOf(rewardAmount, rule.rewardValue);
-            } else if (rule.rewardUnit == RewardUnit.Fixed) {
-                rewardAmountPerRule = rewardAmount - rule.rewardValue;
-            }
-
-            rewardAmount -= rewardAmountPerRule;
-            uint256 rewardAmountPerTicket = rewardAmountPerRule.div(winnerPerRule);
-            for (uint ticketIndex = 0; ticketIndex < ticketsPerRoundId[currentRoundId].length; ticketIndex++) {
-                uint256 ticketId = ticketsPerRoundId[currentRoundId][ticketIndex];
-                if (tickets[ticketId].winStatus && tickets[ticketId].winRewardRule == ruleIndex) {
-                    tickets[ticketId].winAmount = rewardAmountPerTicket;
-                }
+        for (uint ticketIndex = 0; ticketIndex < ticketsPerRoundId[currentRoundId].length; ticketIndex++) {
+            uint256 ticketId = ticketsPerRoundId[currentRoundId][ticketIndex];
+            if (tickets[ticketId].winStatus) {
+                uint256 rewardAmountPerRule = rewardsAmountPerRule[tickets[ticketId].winRewardRule];
+                tickets[ticketId].winAmount = rewardAmountPerRule;
             }
         }
 
@@ -615,6 +609,21 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
                 }
             }
         }
+    }
+
+    function _calculateRewardAmountPerRule(
+        string memory _lotteryId,
+        uint _ruleIndex,
+        uint256 _rewardAmount
+    ) internal view returns (uint256) {
+        Rule memory rule = rulesPerLotteryId[_lotteryId][_ruleIndex];
+        uint256 rewardAmountPerRule;
+        if (rule.rewardUnit == RewardUnit.Percent) {
+            rewardAmountPerRule = _rewardAmount - _percentageOf(_rewardAmount, rule.rewardValue);
+        } else if (rule.rewardUnit == RewardUnit.Fixed) {
+            rewardAmountPerRule = _rewardAmount - rule.rewardValue;
+        }
+        return rewardAmountPerRule;
     }
 
     function _calculateTreasuryFee(string memory _lotteryId, uint256 _roundId) internal view returns (uint256) {
