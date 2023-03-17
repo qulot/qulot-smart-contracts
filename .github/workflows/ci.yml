@@ -9,6 +9,10 @@ on:
   pull_request:
     branches: ["master"]
 
+env:
+  MNEMONIC: "here is where your twelve words mnemonic should be put my friend"
+  INFURA_API_KEY: "fake infura api key"
+
 jobs:
   ci:
     runs-on: "ubuntu-latest"
