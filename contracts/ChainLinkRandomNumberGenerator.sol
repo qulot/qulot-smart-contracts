@@ -7,7 +7,6 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { VRFConsumerBaseV2 } from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import { VRFCoordinatorV2Interface } from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import { IRandomNumberGenerator } from "./interfaces/IRandomNumberGenerator.sol";
-import { IQulotLottery } from "./interfaces/IQulotLottery.sol";
 
 contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGenerator, Ownable {
     using SafeERC20 for IERC20;
@@ -33,6 +32,16 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
     string private constant ERROR_RESULT_NOT_FOUND = "ERROR_RESULT_NOT_FOUND";
     /* #endregion */
 
+    /* #region Events */
+    event RequestRandomNumbers(
+        uint256 roundId,
+        uint32 numbersOfItems,
+        uint32 minValuePerItems,
+        uint32 maxValuePerItems
+    );
+    event ResponseRandomNumbers(uint256 roundId, uint32[] results);
+    /* #endregion */
+
     /* #region States */
     // Address of Qulot lottery smart contarct
     address public qulotLotteryAddress;
@@ -41,20 +50,17 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
     // that key for generating the VRF proof. Different keyHash's have different gas price
     // eilings, so you can select a specific one to bound your maximum per request cost.
     bytes32 private keyHash;
-    // past requests Id.
-    uint256[] private requestIds;
-    // lastest request id
-    uint256 private latestRequestId;
 
     mapping(uint256 => RequestStatus) private requests; /* requestId --> requestStatus */
-    mapping(uint256 => RequestStatus) private requestsByroundId; /* roundId --> requestStatus */
+    mapping(uint256 => uint256) private requestsByRoundId; /* roundId --> requestId */
+    mapping(uint256 => uint256) private roundsByRequestId; /* requestId --> roundId */
 
-    VRFCoordinatorV2Interface private coordinator;
+    VRFCoordinatorV2Interface COORDINATOR;
     // ChainLink VRF subscription id
     uint64 private subscriptionId;
 
     // The default is 3, but you can set this higher.
-    uint16 private requestConfirmations;
+    uint16 private requestConfirmations = 3;
 
     // Depends on the number of requested values that you want sent to the
     // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
@@ -73,11 +79,9 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
      * Once the lottery contract is deployed, setLotteryAddress must be called.
      * https://docs.chain.link/docs/vrf-contracts/
      * @param _vrfCoordinator: address of the VRF coordinator
-     * @param _subscriptionId: ChainLink VRF subscription id
      */
-    constructor(address _vrfCoordinator, uint64 _subscriptionId) VRFConsumerBaseV2(_vrfCoordinator) {
-        coordinator = VRFCoordinatorV2Interface(_vrfCoordinator);
-        subscriptionId = _subscriptionId;
+    constructor(address _vrfCoordinator) VRFConsumerBaseV2(_vrfCoordinator) {
+        COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
     }
 
     /* #endregion */
@@ -97,10 +101,9 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
     ) external override {
         require(msg.sender == qulotLotteryAddress, ERROR_ONLY_QULOT_CONTRACT);
         require(keyHash != bytes32(0), ERROR_INVALID_KEY_HASH);
-        // require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK tokens");
 
         // Will revert if subscription is not set and funded.
-        uint256 requestId = coordinator.requestRandomWords(
+        uint256 requestId = COORDINATOR.requestRandomWords(
             keyHash,
             subscriptionId,
             requestConfirmations,
@@ -116,9 +119,9 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
             fulfilled: false,
             results: new uint32[](_numbersOfItems)
         });
-        requestsByroundId[_roundId] = requests[requestId];
-        requestIds.push(requestId);
-        latestRequestId = requestId;
+        requestsByRoundId[_roundId] = requestId;
+        roundsByRequestId[requestId] = _roundId;
+        emit RequestRandomNumbers(_roundId, _numbersOfItems, _minValuePerItems, _maxValuePerItems);
     }
 
     /**
@@ -126,8 +129,8 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
      * @notice View random result
      */
     function getRandomResult(uint256 _roundId) external view override returns (uint32[] memory) {
-        require(requestsByroundId[_roundId].exists, ERROR_RESULT_NOT_FOUND);
-        return requestsByroundId[_roundId].results;
+        require(requests[requestsByRoundId[_roundId]].exists, ERROR_RESULT_NOT_FOUND);
+        return requests[requestsByRoundId[_roundId]].results;
     }
 
     /**
@@ -177,6 +180,7 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
         }
 
         requests[_requestId].fulfilled = true;
+        emit ResponseRandomNumbers(roundsByRequestId[_requestId], requests[_requestId].results);
     }
 
     /**
@@ -187,6 +191,15 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
      */
     function withdrawTokens(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
         IERC20(_tokenAddress).safeTransfer(address(msg.sender), _tokenAmount);
+    }
+
+    /**
+     * @notice Set subcription id for chainlink VRF
+     * @param _subscriptionId ChainLink VRF subscription id
+     * @dev Only callable by owner.
+     */
+    function setSubscriptionId(uint64 _subscriptionId) external onlyOwner {
+        subscriptionId = _subscriptionId;
     }
     /* #endregion */
 }

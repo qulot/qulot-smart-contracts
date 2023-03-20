@@ -594,12 +594,20 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         return _lottery.pricePerTicket * _numberTickets;
     }
 
+    /**
+     * @notice Check if the ticket win or not. Returns the index of rule for ticket win
+     * @param _ticketId Id of ticket
+     * @param _lotteryId Id of lottery
+     * @param _roundId Id of round
+     * @return isWin Return true if ticket win
+     * @return matchRewardRule Rule index rule match
+     */
     function _checkIsWinTicket(
         uint256 _ticketId,
         string memory _lotteryId,
         uint256 _roundId
     ) internal view returns (bool isWin, uint matchRewardRule) {
-        uint matchedNumbers = _intersectionCount(rounds[_roundId].winningNumbers, tickets[_ticketId].numbers);
+        uint matchedNumbers = _matchNumbersCount(rounds[_roundId].winningNumbers, tickets[_ticketId].numbers);
         if (matchedNumbers != 0) {
             for (uint ruleIndex = 0; ruleIndex < rulesPerLotteryId[_lotteryId].length; ruleIndex++) {
                 if (rulesPerLotteryId[_lotteryId][ruleIndex].matchNumber == matchedNumbers) {
@@ -611,6 +619,12 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         }
     }
 
+    /**
+     * @notice Calculate the amount to be paid for ticket win rule
+     * @param _lotteryId Id of lottery
+     * @param _ruleIndex Index of rule
+     * @param _rewardAmount Total amount of reward
+     */
     function _calculateRewardAmountPerRule(
         string memory _lotteryId,
         uint _ruleIndex,
@@ -626,15 +640,10 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         return rewardAmountPerRule;
     }
 
-    function _calculateTreasuryFee(string memory _lotteryId, uint256 _roundId) internal view returns (uint256) {
-        return _percentageOf(rounds[_roundId].totalAmount, uint(lotteries[_lotteryId].treasuryFeePercent));
-    }
-
-    function _percentageOf(uint256 amount, uint percent) internal pure returns (uint256) {
-        return (amount.mul(percent)).div(100);
-    }
-
-    function _intersectionCount(uint32[] memory _arr1, uint32[] memory _arr2) internal pure returns (uint) {
+    /**
+     * @notice Count the matching numbers between 2 arrays
+     */
+    function _matchNumbersCount(uint32[] memory _arr1, uint32[] memory _arr2) internal pure returns (uint) {
         uint count = 0;
         for (uint arr1Index = 0; arr1Index < _arr1.length; arr1Index++) {
             for (uint arr2Index = 0; arr2Index < _arr2.length; arr2Index++) {
@@ -644,6 +653,22 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             }
         }
         return count;
+    }
+
+    /**
+     * @notice Calculate the treasury fee
+     * @param _lotteryId Id of lottery
+     * @param _roundId Id of round
+     */
+    function _calculateTreasuryFee(string memory _lotteryId, uint256 _roundId) internal view returns (uint256) {
+        return _percentageOf(rounds[_roundId].totalAmount, uint(lotteries[_lotteryId].treasuryFeePercent));
+    }
+
+    /**
+     * @notice Calculate percentage value
+     */
+    function _percentageOf(uint256 amount, uint percent) internal pure returns (uint256) {
+        return (amount.mul(percent)).div(100);
     }
     /* #endregion */
 }
