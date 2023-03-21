@@ -307,7 +307,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         require(_drawDateTime > 0, ERROR_INVALID_ROUND_DRAW_TIME);
         require(
             (currentRoundIdPerLottery[_lotteryId] == 0) ||
-                (rounds[currentRoundIdPerLottery[_lotteryId]].status == RoundStatus.Draw),
+                (rounds[currentRoundIdPerLottery[_lotteryId]].status == RoundStatus.Reward),
             ERROR_NOT_TIME_OPEN_LOTTERY
         );
 
@@ -368,6 +368,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @dev Callable by operator
      */
     function draw(string calldata _lotteryId) external override onlyOperatorOrTrigger {
+        require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
         uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
         require(
             (currentRoundId == 0) || (rounds[currentRoundId].status == RoundStatus.Close),
@@ -394,8 +395,8 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @dev Callable by operator
      */
     function reward(string calldata _lotteryId) external override onlyOperatorOrTrigger {
-        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
         require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
+        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
         require(
             (currentRoundIdPerLottery[_lotteryId] == 0) ||
                 (rounds[currentRoundIdPerLottery[_lotteryId]].status == RoundStatus.Draw),

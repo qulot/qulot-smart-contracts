@@ -2,6 +2,7 @@
 pragma solidity ^0.8.6;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { console } from "hardhat/console.sol";
 import { IRandomNumberGenerator } from "../interfaces/IRandomNumberGenerator.sol";
 import { IQulotLottery } from "../interfaces/IQulotLottery.sol";
 
@@ -13,12 +14,13 @@ contract MockRandomNumberGenerator is IRandomNumberGenerator, Ownable {
     uint private _randNonce = 0;
 
     function requestRandomNumbers(
-        uint256 _sessionId,
+        uint256 _roundId,
         uint32 _numbersOfItems,
         uint32 _minValuePerItems,
         uint32 _maxValuePerItems
     ) external override {
         require(msg.sender == qulotLottery, "Only QulotLottery");
+        console.log("Mock request random numbers result roundId: %s", _roundId);
         uint32[] memory winningNumbers = new uint32[](_numbersOfItems);
         for (uint i = 0; i < _numbersOfItems; i++) {
             // increase nonce
@@ -26,13 +28,18 @@ contract MockRandomNumberGenerator is IRandomNumberGenerator, Ownable {
             uint randomHash = uint(keccak256(abi.encodePacked(block.timestamp, msg.sender, _randNonce)));
             uint32 resultInRange = uint32((randomHash % _maxValuePerItems) + _minValuePerItems);
             winningNumbers[i] = resultInRange;
+            console.log("   ==> Random number index: %s, result: %s", i, resultInRange);
         }
 
-        results[_sessionId] = winningNumbers;
+        results[_roundId] = winningNumbers;
     }
 
-    function getRandomResult(uint256 _sessionId) external view override returns (uint32[] memory) {
-        return results[_sessionId];
+    function getRandomResult(uint256 _roundId) external view override returns (uint32[] memory) {
+        return results[_roundId];
+    }
+
+    function setRandomResult(uint256 _roundId, uint32[] memory _winningNumbers) external {
+        results[_roundId] = _winningNumbers;
     }
 
     /**

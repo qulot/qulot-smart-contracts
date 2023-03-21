@@ -11,20 +11,14 @@ describe("contracts/QulotLottery", function () {
   async function deployQulotLotteryFixture() {
     // Contracts are deployed using the first signer/account by default
     const [owner, otherAccount, operatorAccount] = await ethers.getSigners();
-
     const usdc = await (await ethers.getContractFactory("MockERC20")).deploy("USD Coin", "USDC", parseEther("10000"));
-
     const randomNumberGenerator = await (await ethers.getContractFactory("MockRandomNumberGenerator")).deploy();
-
     const qulotLottery = await (
       await ethers.getContractFactory("QulotLottery")
     ).deploy(usdc.address, randomNumberGenerator.address);
-
     await qulotLottery.setOperatorAddress(operatorAccount.address);
-
     await randomNumberGenerator.setQulotLottery(qulotLottery.address);
-
-    return { qulotLottery, owner, otherAccount, operatorAccount };
+    return { qulotLottery, randomNumberGenerator, owner, otherAccount, operatorAccount };
   }
 
   async function initLottery(qulotLottery: QulotLottery, account: SignerWithAddress) {
@@ -508,11 +502,12 @@ describe("contracts/QulotLottery", function () {
     describe("Validations", function () {
       it("Should fail if invalid id", async function () {
         const fixture = await loadFixture(deployQulotLotteryFixture);
-        const operatorAccount = fixture.operatorAccount;
         let qulotLottery = fixture.qulotLottery;
         // Register new lottery first
-        qulotLottery = await initLottery(qulotLottery, operatorAccount);
-        await expect(qulotLottery.connect(operatorAccount).close("")).to.revertedWith("ERROR_INVALID_LOTTERY_ID");
+        qulotLottery = await initLottery(qulotLottery, fixture.operatorAccount);
+        await expect(qulotLottery.connect(fixture.operatorAccount).close("")).to.revertedWith(
+          "ERROR_INVALID_LOTTERY_ID",
+        );
       });
     });
 
@@ -529,9 +524,8 @@ describe("contracts/QulotLottery", function () {
     describe("Data", function () {
       it("The operator can't close the lottery if he has not opened any round", async function () {
         const fixture = await loadFixture(deployQulotLotteryFixture);
-        const operatorAccount = fixture.operatorAccount;
         let qulotLottery = fixture.qulotLottery;
-        qulotLottery = await initLottery(qulotLottery, operatorAccount);
+        qulotLottery = await initLottery(qulotLottery, fixture.operatorAccount);
         expect(await qulotLottery.close("liteq")).to.revertedWith("ERROR_NOT_TIME_CLOSE_LOTTERY");
       });
     });
@@ -539,11 +533,87 @@ describe("contracts/QulotLottery", function () {
     describe("Events", function () {
       it("Should emit an event on close round", async function () {
         const fixture = await loadFixture(deployQulotLotteryFixture);
-        const operatorAccount = fixture.operatorAccount;
         let qulotLottery = fixture.qulotLottery;
-        qulotLottery = await initLottery(qulotLottery, operatorAccount);
+        qulotLottery = await initLottery(qulotLottery, fixture.operatorAccount);
         await qulotLottery.open("liteq", "1");
         await expect(qulotLottery.close("liteq")).to.emit(qulotLottery, "RoundClose");
+      });
+    });
+  });
+
+  describe("draw", function () {
+    describe("Validations", function () {
+      it("Should fail if invalid id", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        // Register new lottery first
+        qulotLottery = await initLottery(qulotLottery, fixture.operatorAccount);
+        await qulotLottery.close("liteq");
+        await expect(qulotLottery.connect(fixture.operatorAccount).draw("")).to.revertedWith(
+          "ERROR_INVALID_LOTTERY_ID",
+        );
+      });
+    });
+
+    describe("Modifiers", function () {
+      it("Should fail if caller is not operator", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        // Register new lottery first
+        qulotLottery = await initLottery(qulotLottery, fixture.operatorAccount);
+        await qulotLottery.close("liteq");
+        await expect(qulotLottery.connect(fixture.otherAccount).draw("liteq")).to.revertedWith(
+          "ERROR_ONLY_TRIGGER_OR_OPERATOR",
+        );
+      });
+    });
+
+    describe("Data", function () {
+      it("The operator can't draw the lottery if he has not closed any round", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        qulotLottery = await initLottery(qulotLottery, fixture.operatorAccount);
+        await qulotLottery.open("liteq", "1");
+        await expect(qulotLottery.draw("liteq")).to.revertedWith("ERROR_NOT_TIME_DRAW_LOTTERY");
+      });
+
+      it("Should fail if invalid winning numbers", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        // Register new lottery first
+        qulotLottery = await initLottery(qulotLottery, fixture.operatorAccount);
+        await qulotLottery.open("liteq", "1");
+        await qulotLottery.close("liteq");
+
+        // Check empty winning numbers
+        await fixture.randomNumberGenerator.setRandomResult("1", []);
+        await expect(qulotLottery.draw("liteq")).to.revertedWith(
+          "ERROR_INVALID_WINNING_NUMBERS",
+        );
+
+        // Check min number
+        await fixture.randomNumberGenerator.setRandomResult("1", ["0", "2", "3"]);
+        await expect(qulotLottery.draw("liteq")).to.revertedWith(
+          "ERROR_INVALID_WINNING_NUMBERS",
+        );
+
+        // Check min number
+        await fixture.randomNumberGenerator.setRandomResult("1", ["1", "2", "99"]);
+        await expect(qulotLottery.draw("liteq")).to.revertedWith(
+          "ERROR_INVALID_WINNING_NUMBERS",
+        );
+      });
+    });
+
+    describe("Events", function () {
+      it("Should emit an event on draw round", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        // Register new lottery first
+        qulotLottery = await initLottery(qulotLottery, fixture.operatorAccount);
+        await qulotLottery.open("liteq", "1");
+        await qulotLottery.close("liteq");
+        await expect(qulotLottery.draw("liteq")).to.emit(qulotLottery, "RoundDraw");
       });
     });
   });
