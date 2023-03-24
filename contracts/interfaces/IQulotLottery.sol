@@ -71,6 +71,14 @@ interface IQulotLottery {
     function buyTickets(uint256 _roundId, uint32[][] calldata _tickets) external;
 
     /**
+     * @notice Claim a set of winning tickets for a lottery
+     * @param _lotteryId: lottery id
+     * @param _ticketIds: array of ticket ids
+     * @dev Callable by users only, not contract!
+     */
+    function claimTickets(string calldata _lotteryId, uint256[] calldata _ticketIds) external;
+
+    /**
      *
      * @notice Open new round for lottery
      * @param _lotteryId lottery id
@@ -127,6 +135,18 @@ interface IQulotLottery {
      * @notice Return a list of ticket ids
      */
     function getTicketIds() external view returns (uint256[] memory ticketIds);
+
+    /**
+     * @notice Return a list of ticket ids by user address
+     * @param _user: user address
+     * @param _cursor: cursor to start where to retrieve the tickets
+     * @param _size: the number of tickets to retrieve
+     */
+    function getTicketIdsByUser(
+        address _user,
+        uint256 _cursor,
+        uint256 _size
+    ) external view returns (uint256[] memory ticketIds, uint256 cursor);
 
     /**
      * @notice Return ticket by id
