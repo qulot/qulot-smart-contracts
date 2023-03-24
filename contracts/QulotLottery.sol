@@ -332,11 +332,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             require(tickets[ticketId].owner == msg.sender, "ERROR_ONLY_OWNER");
             require(tickets[ticketId].winStatus, "ERROR_TICKET_NOT_WIN");
             require(!tickets[ticketId].clamStatus, "ERROR_ONLY_CLAIM_PRIZE_ONCE");
-
-            // Update the lottery ticket owner to 0x address
-            tickets[ticketId].owner = address(0);
             tickets[ticketId].clamStatus = true;
-
             rewardAmountToTransfer += tickets[ticketId].winAmount;
         }
 
@@ -459,7 +455,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         rounds[currentRoundId].status = RoundStatus.Reward;
 
         // Estimate
-        (uint256 amountTreasury, uint256 amountInject, uint256 rewardAmount) = estimateReward(
+        (uint256 amountTreasury, uint256 amountInject, uint256 rewardAmount) = _estimateReward(
             _lotteryId,
             currentRoundId
         );
@@ -661,10 +657,10 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @return injectAmount Amount inject for the next round
      * @return rewardAmount Number of prizes to be divided among the winners
      */
-    function estimateReward(
+    function _estimateReward(
         string memory _lotteryId,
         uint256 _roundId
-    ) public view returns (uint256 treasuryAmount, uint256 injectAmount, uint256 rewardAmount) {
+    ) internal view returns (uint256 treasuryAmount, uint256 injectAmount, uint256 rewardAmount) {
         treasuryAmount = _percentageOf(rounds[_roundId].totalAmount, lotteries[_lotteryId].treasuryFeePercent);
         injectAmount = _percentageOf(rounds[_roundId].totalAmount, lotteries[_lotteryId].amountInjectNextRoundPercent);
         rewardAmount = rounds[_roundId].totalAmount.sub(treasuryAmount).sub(injectAmount);
