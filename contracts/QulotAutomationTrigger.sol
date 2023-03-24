@@ -9,7 +9,7 @@ import { Cron, Spec } from "@chainlink/contracts/src/v0.8/libraries/internal/Cro
 import { IQulotLottery } from "./interfaces/IQulotLottery.sol";
 import { IQulotAutomationTrigger } from "./interfaces/IQulotAutomationTrigger.sol";
 import { String } from "./utils/StringUtils.sol";
-import { JobType } from "./lib/QulotAutomationTriggerEnums.sol";
+import { JobType, JobStatus } from "./lib/QulotAutomationTriggerEnums.sol";
 import { TriggerJob } from "./lib/QulotAutomationTriggerStructs.sol";
 
 contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatibleInterface, Ownable {
@@ -20,7 +20,7 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
     error TickTooOld();
     error TickDoesntMatchSpec();
     event NewTriggerJob(string jobId, string lotteryId, JobType jobType, string cronSpec);
-    event PerformTriggerJob(string jobId, uint256 timestamp);
+    event PerformTriggerJob(string jobId, uint256 timestamp, JobStatus status);
 
     string private constant ERROR_ONLY_OPERATOR = "ERROR_ONLY_OPERATOR";
     string private constant ERROR_INVALID_ZERO_ADDRESS = "ERROR_INVALID_ZERO_ADDRESS";
@@ -81,7 +81,6 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
     function performUpkeep(bytes calldata performData) external override {
         (string memory jobId, uint256 tickTime) = abi.decode(performData, (string, uint256));
 
-        tickTime = tickTime - (tickTime % 60); // remove seconds from tick time
         if (block.timestamp < tickTime) {
             revert TickInFuture();
         }
@@ -92,10 +91,18 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
             revert TickDoesntMatchSpec();
         }
 
-        lastRuns[jobId] = block.timestamp;
-        emit PerformTriggerJob(jobId, block.timestamp);
+        excuteJob(jobId);
+    }
 
+    /**
+     * @notice Execute trigger job by job id
+     * @param jobId The id of the trigger job
+     * @dev Callable by internal
+     */
+    function excuteJob(string memory jobId) internal {
+        lastRuns[jobId] = block.timestamp;
         TriggerJob memory job = jobs[jobId];
+
         if (job.jobType == JobType.TriggerOpenLottery) {
             qulotLottery.open(job.lotteryId, specs[jobId].nextTick());
         } else if (job.jobType == JobType.TriggerCloseLottery) {
@@ -105,6 +112,8 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
         } else if (job.jobType == JobType.TriggerRewardLottery) {
             qulotLottery.reward(job.lotteryId);
         }
+
+        emit PerformTriggerJob(jobId, block.timestamp, JobStatus.Success);
     }
 
     /**
@@ -113,6 +122,7 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
      * @param _lotteryId Id of lottery want scheduled
      * @param _jobCronSpec Spec of crontab
      * @param _jobType Job type
+     * @dev Callable by operator
      */
     function addTriggerJob(
         string memory _jobId,
@@ -159,6 +169,7 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
     /**
      * @notice Set the address for the Qulot
      * @param _qulotLotteryAddress: address of the Qulot lottery
+     * @dev Callable by owner
      */
     function setQulotLottery(address _qulotLotteryAddress) external override onlyOwner {
         qulotLottery = IQulotLottery(_qulotLotteryAddress);

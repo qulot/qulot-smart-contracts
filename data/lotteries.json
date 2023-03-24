@@ -7,7 +7,7 @@
     "minValuePerItem": 1,
     "maxValuePerItem": 66,
     "periodDays": [0, 1, 2, 3, 4, 5, 6],
-    "periodHourOfDays": 1,
+    "periodHourOfDays": 2,
     "maxNumberTicketsPerBuy": 10000,
     "pricePerTicket": 1,
     "treasuryFeePercent": 10,
