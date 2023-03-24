@@ -14,7 +14,7 @@ task("deploy", "Deploy the Qulot lottery contract to the network").setAction(asy
   const vrfKeyHash = getEnvByNetwork("VRF_KEY_HASH", network.name);
   const tokenAddress = getEnvByNetwork("TOKEN_ADDRESS", network.name);
   if (vrfCoordinator && vrfSubscriptionId && vrfKeyHash && tokenAddress) {
-    const [owner, operator, treasury] = await ethers.getSigners();
+    const [_, operator, treasury] = await ethers.getSigners();
 
     // Deploy Qulot automation trigger contract
     console.warn("Trying deploy QulotAutomationTrigger contract...");

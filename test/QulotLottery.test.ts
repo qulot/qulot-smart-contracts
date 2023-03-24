@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
-import { formatEther, parseEther } from "ethers/lib/utils";
+import { parseEther } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import moment from "moment";
 
@@ -784,7 +784,7 @@ describe("contracts/QulotLottery", function () {
         await expect(qulotLottery.connect(fixture.operator).reward("liteq")).to.emit(qulotLottery, "RoundReward");
         const liteq = await qulotLottery.getLottery("liteq");
         const totalRoundAmount = (await qulotLottery.getRound(currentRoundId)).totalAmount;
-        let estimateTreasuryFee = totalRoundAmount
+        const estimateTreasuryFee = totalRoundAmount
           .mul(BigNumber.from(liteq.treasuryFeePercent))
           .div(BigNumber.from(100));
         let estimateAmountInject = totalRoundAmount
