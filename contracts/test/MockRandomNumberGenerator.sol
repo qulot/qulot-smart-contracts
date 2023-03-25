@@ -2,7 +2,6 @@
 pragma solidity ^0.8.6;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { console } from "hardhat/console.sol";
 import { IRandomNumberGenerator } from "../interfaces/IRandomNumberGenerator.sol";
 import { IQulotLottery } from "../interfaces/IQulotLottery.sol";
 
@@ -20,7 +19,6 @@ contract MockRandomNumberGenerator is IRandomNumberGenerator, Ownable {
         uint32 _maxValuePerItems
     ) external override {
         require(msg.sender == qulotLottery, "Only QulotLottery");
-        console.log("Mock request random numbers result roundId: %s", _roundId);
         uint32[] memory winningNumbers = new uint32[](_numbersOfItems);
         for (uint i = 0; i < _numbersOfItems; i++) {
             // increase nonce
@@ -28,7 +26,6 @@ contract MockRandomNumberGenerator is IRandomNumberGenerator, Ownable {
             uint randomHash = uint(keccak256(abi.encodePacked(block.timestamp, msg.sender, _randNonce)));
             uint32 resultInRange = uint32((randomHash % _maxValuePerItems) + _minValuePerItems);
             winningNumbers[i] = resultInRange;
-            console.log("   ==> Random number index: %s, result: %s", i, resultInRange);
         }
 
         results[_roundId] = winningNumbers;

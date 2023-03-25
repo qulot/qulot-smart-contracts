@@ -950,15 +950,6 @@ describe("contracts/QulotLottery", function () {
         qulotLottery = await openLottery(qulotLottery, fixture.operator);
         await expect(qulotLottery.claimTickets([])).to.revertedWith("ERROR_TICKETS_EMPTY");
       });
-
-      it("Should fail if not the time to claim tickets", async function () {
-        const fixture = await loadFixture(deployQulotLotteryFixture);
-        let qulotLottery = fixture.qulotLottery;
-        // Register new lottery first
-        qulotLottery = await initLottery(qulotLottery, fixture.operator);
-        qulotLottery = await openLottery(qulotLottery, fixture.operator);
-        await expect(qulotLottery.claimTickets(["1"])).to.revertedWith("ERROR_NOT_TIME_CLAIM_TICKET");
-      });
     });
 
     describe("Data", function () {

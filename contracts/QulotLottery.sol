@@ -763,7 +763,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @notice Calculate percentage value
      */
     function _percentageOf(uint256 amount, uint256 percent) internal pure returns (uint256) {
-        require(percent >= 0 && percent <= 100, "Invalid percent value");
+        require(percent >= 0 && percent <= 100, "INVALID_PERCENT_VALUE");
         return (amount.mul(percent)).div(100);
     }
     /* #endregion */

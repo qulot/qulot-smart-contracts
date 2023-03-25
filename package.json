@@ -61,7 +61,6 @@
   "dependencies": {
     "cron-time-generator": "^1.3.2",
     "moment": "^2.29.4",
-    "node-schedule": "^2.1.1",
     "snake-case": "^3.0.4"
   }
 }

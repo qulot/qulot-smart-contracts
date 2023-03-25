@@ -1,5 +1,6 @@
 import "@nomicfoundation/hardhat-toolbox";
 import { config as dotenvConfig } from "dotenv";
+import "hardhat-gas-reporter";
 import type { HardhatUserConfig } from "hardhat/config";
 import type { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
@@ -63,6 +64,9 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
+  gasReporter: {
+    enabled: process.env.REPORT_GAS ? true : false,
+  },
   etherscan: {
     apiKey: {
       goerli: process.env.ETHERSCAN_API_KEY || "",
