@@ -981,9 +981,7 @@ describe("contracts/QulotLottery", function () {
         await qulotLottery.close("liteq");
         await qulotLottery.draw("liteq");
         await qulotLottery.reward("liteq");
-        await expect(qulotLottery.connect(fixture.rose).claimTickets(ticketIds)).to.revertedWith(
-          "ERROR_ONLY_OWNER",
-        );
+        await expect(qulotLottery.connect(fixture.rose).claimTickets(ticketIds)).to.revertedWith("ERROR_ONLY_OWNER");
       });
 
       it("Should fail if the owner of ticket is not win", async function () {
