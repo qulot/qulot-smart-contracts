@@ -773,13 +773,9 @@ describe("contracts/QulotLottery", function () {
             ])
           ).wait()
         ).events?.find((evt) => evt.event === "TicketsPurchase")?.args?.ticketIds as BigNumber[];
-        // Mock no one wins
-        await fixture.randomNumberGenerator.setRandomResult(currentRoundId, ["1", "1", "1"]);
         await qulotLottery.connect(fixture.operator).close("liteq");
-
         // Mock winning numbers for lisa jackpot
         await fixture.randomNumberGenerator.setRandomResult("1", ["3", "5", "20"]);
-
         await qulotLottery.connect(fixture.operator).draw("liteq");
         await expect(qulotLottery.connect(fixture.operator).reward("liteq")).to.emit(qulotLottery, "RoundReward");
         const liteq = await qulotLottery.getLottery("liteq");
@@ -799,6 +795,28 @@ describe("contracts/QulotLottery", function () {
         }
         estimateAmountInject = estimateAmountInject.add(estimateRewardAmount);
         expect(estimateAmountInject).to.equal(await qulotLottery.amountInjectNextRoundPerLottery("liteq"));
+      });
+
+      it("Check the win amount when successful reward, lisa win jackpot, rose win 2th", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        qulotLottery = await initLottery(qulotLottery, fixture.operator);
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
+        // Lisa by 3 tickets
+        const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
+        await qulotLottery.connect(fixture.lisa).buyTickets(currentRoundId, [
+          ["3", "5", "20"],
+          ["7", "19", "52"],
+          ["10", "4", "9"],
+        ]);
+        await qulotLottery.connect(fixture.rose).buyTickets(currentRoundId, [["3", "5", "1"]]);
+        await qulotLottery.connect(fixture.operator).close("liteq");
+        // Mock winning numbers for lisa jackpot
+        await fixture.randomNumberGenerator.setRandomResult("1", ["3", "5", "20"]);
+        await qulotLottery.connect(fixture.operator).draw("liteq");
+        await expect(qulotLottery.connect(fixture.operator).reward("liteq")).to.emit(qulotLottery, "RoundReward");
+        expect((await qulotLottery.getTicket("1")).winAmount).to.equal(parseEther("2.24"));
+        expect((await qulotLottery.getTicket("4")).winAmount).to.equal(parseEther("0.96"));
       });
     });
 
@@ -1024,6 +1042,56 @@ describe("contracts/QulotLottery", function () {
         await expect(qulotLottery.connect(fixture.lisa).claimTickets(["1"])).to.revertedWith(
           "ERROR_ONLY_CLAIM_PRIZE_ONCE",
         );
+      });
+
+      it("Check user balance after claim tickets", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        // Register new lottery first
+        qulotLottery = await initLottery(qulotLottery, fixture.operator);
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
+        const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
+        // Mock lisa by 2 tickets
+        await qulotLottery.connect(fixture.lisa).buyTickets(currentRoundId, [
+          ["3", "5", "20"],
+          ["7", "19", "52"],
+        ]);
+        await qulotLottery.connect(fixture.operator).close("liteq");
+        // Mock winning numbers for lisa win jackpot
+        await fixture.randomNumberGenerator.setRandomResult(currentRoundId, ["3", "5", "20"]);
+        await qulotLottery.connect(fixture.operator).draw("liteq");
+        await qulotLottery.connect(fixture.operator).reward("liteq");
+
+        // Check lisa claim
+        await expect(qulotLottery.connect(fixture.lisa).claimTickets(["1"])).to.changeTokenBalances(
+          fixture.token,
+          [qulotLottery.address, fixture.lisa.address],
+          [parseEther("-1.12"), parseEther("1.12")],
+        );
+      });
+    });
+
+    describe("Events", function () {
+      it("Should emit an event on successful ticket claim", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        // Register new lottery first
+        qulotLottery = await initLottery(qulotLottery, fixture.operator);
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
+        const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
+        // Mock lisa by 2 tickets
+        await qulotLottery.connect(fixture.lisa).buyTickets(currentRoundId, [
+          ["3", "5", "20"],
+          ["7", "19", "52"],
+        ]);
+        await qulotLottery.connect(fixture.operator).close("liteq");
+        // Mock winning numbers for lisa win jackpot
+        await fixture.randomNumberGenerator.setRandomResult(currentRoundId, ["3", "5", "20"]);
+        await qulotLottery.connect(fixture.operator).draw("liteq");
+        await qulotLottery.connect(fixture.operator).reward("liteq");
+
+        // Check lisa claim
+        await expect(qulotLottery.connect(fixture.lisa).claimTickets(["1"])).to.emit(qulotLottery, "TicketsClaim");
       });
     });
   });

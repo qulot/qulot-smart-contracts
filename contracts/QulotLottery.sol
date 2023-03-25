@@ -450,9 +450,8 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             currentRoundId
         );
 
-        rewardAmount = _findWinnersAndReward(_lotteryId, currentRoundId, rewardAmount);
-
-        amountInject += rewardAmount;
+        uint256 outRewardValue = _findWinnersAndReward(_lotteryId, currentRoundId, rewardAmount);
+        amountInject += outRewardValue;
         amountInjectNextRoundPerLottery[_lotteryId] = amountInject;
         // Transfer token to treasury address
         token.safeTransfer(treasuryAddress, amountTreasury);
@@ -605,6 +604,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         uint256 _roundId,
         uint256 rewardAmount
     ) internal returns (uint256 outRewardValue) {
+        outRewardValue = rewardAmount;
         uint[] memory winnersPerRule = new uint[](rulesPerLotteryId[_lotteryId].length);
         for (uint ticketIndex = 0; ticketIndex < ticketsPerRoundId[_roundId].length; ticketIndex++) {
             uint256 ticketId = ticketsPerRoundId[_roundId][ticketIndex];
@@ -622,7 +622,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             uint winnerPerRule = winnersPerRule[ruleIndex];
             if (winnerPerRule > 0) {
                 uint256 rewardAmountPerRule = _calculateRewardAmountPerRule(_lotteryId, ruleIndex, rewardAmount);
-                rewardAmount -= rewardAmountPerRule;
+                outRewardValue -= rewardAmountPerRule;
                 uint256 rewardAmountPerTicket = rewardAmountPerRule.div(winnerPerRule);
                 rewardsAmountPerRule[ruleIndex] = rewardAmountPerTicket;
             }
@@ -635,8 +635,6 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
                 tickets[ticketId].winAmount = rewardAmountPerRule;
             }
         }
-
-        outRewardValue = rewardAmount;
     }
 
     /**
@@ -728,7 +726,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         Rule memory rule = rulesPerLotteryId[_lotteryId][_ruleIndex];
         uint256 rewardAmountPerRule;
         if (rule.rewardUnit == RewardUnit.Percent) {
-            rewardAmountPerRule = _rewardAmount - _percentageOf(_rewardAmount, rule.rewardValue);
+            rewardAmountPerRule = _percentageOf(_rewardAmount, rule.rewardValue);
         } else if (rule.rewardUnit == RewardUnit.Fixed) {
             rewardAmountPerRule = _rewardAmount - rule.rewardValue;
         }
