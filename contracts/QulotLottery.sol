@@ -59,7 +59,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     /* #region Events */
     event TicketsPurchase(address indexed buyer, uint256 indexed roundId, uint256[] ticketIds);
     event TicketsClam(address indexed claimer, uint256 indexed roundId, uint256 amount);
-    event TicketsClaim(address indexed claimer, uint256 amount, string indexed lotteryId, uint256 numberTickets);
+    event TicketsClaim(address indexed claimer, uint256 amount, uint256 numberTickets);
     event NewLottery(string indexed lotteryId, string verboseName);
     event NewRewardRule(string lotteryId, uint32 _matchNumber, RewardUnit rewardUnit, uint256 rewardValue);
     event RoundOpen(uint256 indexed roundId, uint256 startTime);
@@ -290,8 +290,9 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             // Increment lottery ticket number
             counterTicketId.increment();
             tickets[counterTicketId.current()] = Ticket({
-                numbers: ticketNumbers,
                 owner: msg.sender,
+                roundId: _roundId,
+                numbers: ticketNumbers,
                 winStatus: false,
                 winRewardRule: 0,
                 winAmount: 0,
@@ -308,22 +309,11 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
 
     /**
      * @notice Claim a set of winning tickets for a lottery
-     * @param _lotteryId: lottery id
      * @param _ticketIds: array of ticket ids
      * @dev Callable by users only, not contract!
      */
-    function claimTickets(
-        string calldata _lotteryId,
-        uint256[] calldata _ticketIds
-    ) external override notContract nonReentrant {
-        require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
+    function claimTickets(uint256[] calldata _ticketIds) external override notContract nonReentrant {
         require(_ticketIds.length != 0, ERROR_TICKETS_EMPTY);
-
-        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
-        require(
-            (currentRoundId == 0) || (rounds[currentRoundId].status == RoundStatus.Reward),
-            ERROR_NOT_TIME_CLAIM_TICKET
-        );
 
         // Initializes the rewardAmountToTransfer
         uint256 rewardAmountToTransfer;
@@ -339,7 +329,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         // Transfer money to msg.sender
         token.safeTransfer(msg.sender, rewardAmountToTransfer);
 
-        emit TicketsClaim(msg.sender, rewardAmountToTransfer, _lotteryId, _ticketIds.length);
+        emit TicketsClaim(msg.sender, rewardAmountToTransfer, _ticketIds.length);
     }
 
     /**

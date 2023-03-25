@@ -72,11 +72,10 @@ interface IQulotLottery {
 
     /**
      * @notice Claim a set of winning tickets for a lottery
-     * @param _lotteryId: lottery id
      * @param _ticketIds: array of ticket ids
      * @dev Callable by users only, not contract!
      */
-    function claimTickets(string calldata _lotteryId, uint256[] calldata _ticketIds) external;
+    function claimTickets(uint256[] calldata _ticketIds) external;
 
     /**
      *
