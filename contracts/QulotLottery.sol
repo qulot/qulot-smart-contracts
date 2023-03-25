@@ -59,7 +59,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     /* #region Events */
     event TicketsPurchase(address indexed buyer, uint256 indexed roundId, uint256[] ticketIds);
     event TicketsClam(address indexed claimer, uint256 indexed roundId, uint256 amount);
-    event TicketsClaim(address indexed claimer, uint256 amount, string indexed lotteryId, uint256 numberTickets);
+    event TicketsClaim(address indexed claimer, uint256 amount, uint256 numberTickets);
     event NewLottery(string indexed lotteryId, string verboseName);
     event NewRewardRule(string lotteryId, uint32 _matchNumber, RewardUnit rewardUnit, uint256 rewardValue);
     event RoundOpen(uint256 indexed roundId, uint256 startTime);
@@ -290,8 +290,9 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             // Increment lottery ticket number
             counterTicketId.increment();
             tickets[counterTicketId.current()] = Ticket({
-                numbers: ticketNumbers,
                 owner: msg.sender,
+                roundId: _roundId,
+                numbers: ticketNumbers,
                 winStatus: false,
                 winRewardRule: 0,
                 winAmount: 0,
@@ -308,22 +309,11 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
 
     /**
      * @notice Claim a set of winning tickets for a lottery
-     * @param _lotteryId: lottery id
      * @param _ticketIds: array of ticket ids
      * @dev Callable by users only, not contract!
      */
-    function claimTickets(
-        string calldata _lotteryId,
-        uint256[] calldata _ticketIds
-    ) external override notContract nonReentrant {
-        require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
+    function claimTickets(uint256[] calldata _ticketIds) external override notContract nonReentrant {
         require(_ticketIds.length != 0, ERROR_TICKETS_EMPTY);
-
-        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
-        require(
-            (currentRoundId == 0) || (rounds[currentRoundId].status == RoundStatus.Reward),
-            ERROR_NOT_TIME_CLAIM_TICKET
-        );
 
         // Initializes the rewardAmountToTransfer
         uint256 rewardAmountToTransfer;
@@ -332,18 +322,14 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             require(tickets[ticketId].owner == msg.sender, "ERROR_ONLY_OWNER");
             require(tickets[ticketId].winStatus, "ERROR_TICKET_NOT_WIN");
             require(!tickets[ticketId].clamStatus, "ERROR_ONLY_CLAIM_PRIZE_ONCE");
-
-            // Update the lottery ticket owner to 0x address
-            tickets[ticketId].owner = address(0);
             tickets[ticketId].clamStatus = true;
-
             rewardAmountToTransfer += tickets[ticketId].winAmount;
         }
 
         // Transfer money to msg.sender
         token.safeTransfer(msg.sender, rewardAmountToTransfer);
 
-        emit TicketsClaim(msg.sender, rewardAmountToTransfer, _lotteryId, _ticketIds.length);
+        emit TicketsClaim(msg.sender, rewardAmountToTransfer, _ticketIds.length);
     }
 
     /**
@@ -459,14 +445,13 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         rounds[currentRoundId].status = RoundStatus.Reward;
 
         // Estimate
-        (uint256 amountTreasury, uint256 amountInject, uint256 rewardAmount) = estimateReward(
+        (uint256 amountTreasury, uint256 amountInject, uint256 rewardAmount) = _estimateReward(
             _lotteryId,
             currentRoundId
         );
 
-        rewardAmount = _findWinnersAndReward(_lotteryId, currentRoundId, rewardAmount);
-
-        amountInject += rewardAmount;
+        uint256 outRewardValue = _findWinnersAndReward(_lotteryId, currentRoundId, rewardAmount);
+        amountInject += outRewardValue;
         amountInjectNextRoundPerLottery[_lotteryId] = amountInject;
         // Transfer token to treasury address
         token.safeTransfer(treasuryAddress, amountTreasury);
@@ -619,6 +604,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         uint256 _roundId,
         uint256 rewardAmount
     ) internal returns (uint256 outRewardValue) {
+        outRewardValue = rewardAmount;
         uint[] memory winnersPerRule = new uint[](rulesPerLotteryId[_lotteryId].length);
         for (uint ticketIndex = 0; ticketIndex < ticketsPerRoundId[_roundId].length; ticketIndex++) {
             uint256 ticketId = ticketsPerRoundId[_roundId][ticketIndex];
@@ -636,7 +622,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             uint winnerPerRule = winnersPerRule[ruleIndex];
             if (winnerPerRule > 0) {
                 uint256 rewardAmountPerRule = _calculateRewardAmountPerRule(_lotteryId, ruleIndex, rewardAmount);
-                rewardAmount -= rewardAmountPerRule;
+                outRewardValue -= rewardAmountPerRule;
                 uint256 rewardAmountPerTicket = rewardAmountPerRule.div(winnerPerRule);
                 rewardsAmountPerRule[ruleIndex] = rewardAmountPerTicket;
             }
@@ -649,8 +635,6 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
                 tickets[ticketId].winAmount = rewardAmountPerRule;
             }
         }
-
-        outRewardValue = rewardAmount;
     }
 
     /**
@@ -661,10 +645,10 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @return injectAmount Amount inject for the next round
      * @return rewardAmount Number of prizes to be divided among the winners
      */
-    function estimateReward(
+    function _estimateReward(
         string memory _lotteryId,
         uint256 _roundId
-    ) public view returns (uint256 treasuryAmount, uint256 injectAmount, uint256 rewardAmount) {
+    ) internal view returns (uint256 treasuryAmount, uint256 injectAmount, uint256 rewardAmount) {
         treasuryAmount = _percentageOf(rounds[_roundId].totalAmount, lotteries[_lotteryId].treasuryFeePercent);
         injectAmount = _percentageOf(rounds[_roundId].totalAmount, lotteries[_lotteryId].amountInjectNextRoundPercent);
         rewardAmount = rounds[_roundId].totalAmount.sub(treasuryAmount).sub(injectAmount);
@@ -742,7 +726,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         Rule memory rule = rulesPerLotteryId[_lotteryId][_ruleIndex];
         uint256 rewardAmountPerRule;
         if (rule.rewardUnit == RewardUnit.Percent) {
-            rewardAmountPerRule = _rewardAmount - _percentageOf(_rewardAmount, rule.rewardValue);
+            rewardAmountPerRule = _percentageOf(_rewardAmount, rule.rewardValue);
         } else if (rule.rewardUnit == RewardUnit.Fixed) {
             rewardAmountPerRule = _rewardAmount - rule.rewardValue;
         }
@@ -777,7 +761,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @notice Calculate percentage value
      */
     function _percentageOf(uint256 amount, uint256 percent) internal pure returns (uint256) {
-        require(percent >= 0 && percent <= 100, "Invalid percent value");
+        require(percent >= 0 && percent <= 100, "INVALID_PERCENT_VALUE");
         return (amount.mul(percent)).div(100);
     }
     /* #endregion */

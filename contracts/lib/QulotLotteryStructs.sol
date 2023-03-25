@@ -39,6 +39,7 @@ struct Rule {
 struct Ticket {
     uint32[] numbers;
     address owner;
+    uint256 roundId;
     bool winStatus;
     uint winRewardRule;
     uint256 winAmount;
