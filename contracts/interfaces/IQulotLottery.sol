@@ -6,13 +6,13 @@ import { Lottery, Round, Ticket } from "../lib/QulotLotteryStructs.sol";
 
 interface IQulotLottery {
     /**
-     * @notice Change the random generator
+     * @notice Set the random generator
      * @dev The calls to functions are used to verify the new generator implements them properly.
      * Callable only by the contract owner
      * @param _randomGeneratorAddress: address of the random generator
      * @dev Callable by operator
      */
-    function changeRandomGenerator(address _randomGeneratorAddress) external;
+    function setRandomGenerator(address _randomGeneratorAddress) external;
 
     /**
      *
