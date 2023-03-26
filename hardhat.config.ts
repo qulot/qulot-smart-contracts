@@ -5,7 +5,10 @@ import type { HardhatUserConfig } from "hardhat/config";
 import type { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
-import "./tasks/deploy";
+import "./tasks/deployChainLinkRandomNumberGenerator";
+import "./tasks/deployQulotAutomationTrigger";
+import "./tasks/deployQulotLottery";
+import "./tasks/initChainLinkRandomNumberGenerator";
 import "./tasks/initQulotAutomationTrigger";
 import "./tasks/initQulotLottery";
 import { getEnvByNetwork } from "./utils/env";

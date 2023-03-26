@@ -38,70 +38,78 @@ function getJobCronSpec(periodDays: number[], periodHourOfDays: number, jobType:
   }
 }
 
-task("init:QulotAutomationTrigger", "First init data for Qulot lottery after deployed")
+task("init:QulotAutomationTrigger", "First init data for QulotAutomationTrigger after deployed")
   .addParam("address", "Qulot automation trigger contract address")
   .addParam("qulotAddress", "Qulot lottery contract address")
   .setAction(async function (taskArguments: TaskArguments, { ethers, network }) {
     // Get operator signer
-    const [_, operator] = await ethers.getSigners();
+    const [owner, operator] = await ethers.getSigners();
 
     // Get network data for running script.
     const gasPrice = await ethers.provider.getGasPrice();
 
-    if (operator) {
-      console.log(`Init Qulot automation trigger using operator address ${operator.address}`);
-      const qulotAutomationTrigger = await ethers.getContractAt(
-        "QulotAutomationTrigger",
-        taskArguments.address,
-        operator,
-      );
+    console.log(`Init Qulot automation trigger using owner: ${owner.address}, operator: ${operator.address}`);
+    const qulotAutomationTrigger = await ethers.getContractAt(
+      "QulotAutomationTrigger",
+      taskArguments.address,
+      operator,
+    );
 
-      const qulotLottery = await ethers.getContractAt("QulotLottery", taskArguments.qulotAddress);
-      const lotteryIds = await qulotLottery.getLotteryIds();
-      console.log(`Qulot lottery returns lotteries ${inspect(lotteryIds)}`);
+    const setQulotLotteryAddressTx = await qulotAutomationTrigger
+      .connect(owner)
+      .setQulotLottery(taskArguments.qulotAddress, {
+        gasLimit: 500000,
+        gasPrice: gasPrice.mul(2),
+      });
+    console.log(
+      `[${new Date().toISOString()}] network=${network.name} message='Set qulot lottery address #${
+        taskArguments.qulotAddress
+      }' hash=${setQulotLotteryAddressTx?.hash} signer=${owner.address}`,
+    );
 
-      const triggerJobTypeKeys = Object.keys(JobType).filter((v) => isNaN(Number(v)));
+    const qulotLottery = await ethers.getContractAt("QulotLottery", taskArguments.qulotAddress);
+    const lotteryIds = await qulotLottery.getLotteryIds();
+    console.log(`Qulot lottery returns lotteries ${inspect(lotteryIds)}`);
 
-      for (const lotteryId of lotteryIds) {
-        const lottery = await qulotLottery.getLottery(lotteryId);
-        console.log(`Add trigger jobs for lottery ${inspect(lottery)}`);
+    const triggerJobTypeKeys = Object.keys(JobType).filter((v) => isNaN(Number(v)));
 
-        const periodDays = lottery.periodDays.map((period) => period.toNumber());
-        const periodHourOfDays = lottery.periodHourOfDays.toNumber();
+    for (const lotteryId of lotteryIds) {
+      const lottery = await qulotLottery.getLottery(lotteryId);
+      console.log(`Add trigger jobs for lottery ${inspect(lottery)}`);
 
-        for (const jobTypeKey of triggerJobTypeKeys) {
-          const triggerJobType = JobType[jobTypeKey as JobTypeKeys];
-          const triggerJobId = getJobId(lotteryId, triggerJobType);
-          const triggerJobCron = getJobCronSpec(periodDays, periodHourOfDays, triggerJobType);
+      const periodDays = lottery.periodDays.map((period) => period.toNumber());
+      const periodHourOfDays = lottery.periodHourOfDays.toNumber();
 
-          console.log(
-            `Add trigger job ${triggerJobId}, params: ${inspect({
-              triggerJobId,
-              lotteryId,
-              triggerJobCron,
-              triggerJobType,
-            })}`,
-          );
+      for (const jobTypeKey of triggerJobTypeKeys) {
+        const triggerJobType = JobType[jobTypeKey as JobTypeKeys];
+        const triggerJobId = getJobId(lotteryId, triggerJobType);
+        const triggerJobCron = getJobCronSpec(periodDays, periodHourOfDays, triggerJobType);
 
-          const addTriggerJobTx = await qulotAutomationTrigger.addTriggerJob(
+        console.log(
+          `Add trigger job ${triggerJobId}, params: ${inspect({
             triggerJobId,
             lotteryId,
             triggerJobCron,
             triggerJobType,
-            {
-              gasLimit: 500000,
-              gasPrice: gasPrice.mul(2),
-            },
-          );
+          })}`,
+        );
 
-          console.log(
-            `[${new Date().toISOString()}] network=${network.name} message='Add lottery #${triggerJobId}' hash=${
-              addTriggerJobTx?.hash
-            } signer=${operator.address}`,
-          );
-        }
+        const addTriggerJobTx = await qulotAutomationTrigger.addTriggerJob(
+          triggerJobId,
+          lotteryId,
+          triggerJobCron,
+          triggerJobType,
+          {
+            gasLimit: 500000,
+            gasPrice: gasPrice.mul(2),
+          },
+        );
+
+        console.log(
+          `[${new Date().toISOString()}] network=${network.name} message='Add lottery #${triggerJobId}' hash=${
+            addTriggerJobTx?.hash
+          } signer=${operator.address}`,
+        );
       }
-    } else {
-      console.error("Not setup owner for init Qulot automation trigger");
     }
   });

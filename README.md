@@ -2,7 +2,8 @@
 
 ## Description
 
-A lottery for ERC20 tokens built with Chainlink's VRF.
+A lottery smart contract used to store lotteries, tickets, rounds. Allow users to buy tickets and claim rewards. Uses a
+special algorithm to get a random number instead of the traditional random and lottery functions
 
 ## Usage
 
@@ -66,23 +67,80 @@ Generate the code coverage report:
 $ yarn coverage
 ```
 
-### Deploy And Initialize Contracts
+## Contracts
 
-Deploy the contracts to network:
+This project needs contract **QulotLottery** to operate. Other contracts you can customize or replace depending on the
+purpose of use:
+
+| Contract                                                              | Description                                                                                     |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [QulotLottery](#qulot-lottery)                                        | Contract used to store lotteries, tickets, rounds. Allow users to buy tickets and claim rewards |
+| [ChainLinkRandomNumberGenerator](#chain-link-random-number-generator) | Contract used to get random numbers from ChainLink VRF                                          |
+| [QulotAutomationTrigger](#qulot-automation-trigger)                   | Contract used to schedule call QulotLottery                                                     |
 
 ```sh
 $ yarn deploy:goerli
 ```
 
-Data initialization for smart contract:
+### QulotLottery (required)
+
+**QulotLottery** is a contract used to store lotteries, tickets, rounds. Allow users to buy tickets and claim rewards:
+
+Deploy and verifying deployed contracts:
 
 ```sh
-$ npx hardhat init:QulotLottery --network goerli --address <qulot-lottery-address>
-$ npx hardhat init:QulotAutomationTrigger --network goerli --address <qulot-automation-trigger-address> --qulot-address <qulot-lottery-address>
+$ npx hardhat deploy:QulotLottery --network sepolia
 ```
 
-Verifying deployed contracts:
+First initialization for smart contract:
+
+```bash
+$ npx hardhat init:QulotLottery \
+    --network sepolia \
+    --address <deployed-address> \
+    --random-generator-address <deployed-random-generator-address> \
+    --automation-trigger-address <deployed-automation-trigger-address>
+```
+
+### ChainLinkRandomNumberGenerator (optional)
+
+**ChainLinkRandomNumberGenerator** is a contract used to get random numbers from
+[ChainLink VRF](https://docs.chain.link/vrf/v2/introduction/):
+
+Deploy and verifying deployed contracts:
 
 ```sh
-$ npx hardhat verify --network goerli <address> <argument 1> <argument 2>
+$ npx hardhat deploy:ChainLinkRandomNumberGenerator --network sepolia
+```
+
+First initialization for smart contract:
+
+```bash
+$ npx hardhat init:ChainLinkRandomNumberGenerator \
+    --network sepolia \
+    --address <deployed-address> \
+    --qulot-address <qulot-lottery-address>
+```
+
+### QulotAutomationTrigger (optional)
+
+**QulotAutomationTrigger** is a duty contract to call the functions of **QulotLottery** like _Open_, _Close_, _Draw_,
+_reward_ in a cron schedule setup:
+
+This contract implemented the **AutomationCompatibleInterface** interface of
+[ChainLink Automation](https://docs.chain.link/vrf/v2/introduction/).
+
+Deploy and verifying deployed contracts:
+
+```sh
+$ npx hardhat deploy:QulotAutomationTrigger --network sepolia
+```
+
+First initialization for smart contract:
+
+```bash
+$ npx hardhat init:QulotAutomationTrigger \
+    --network sepolia \
+    --address <deployed-address> \
+    --qulot-address <qulot-lottery-address>
 ```

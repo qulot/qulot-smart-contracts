@@ -24,10 +24,9 @@ describe("contracts/QulotLottery", function () {
     console.log(`RandomNumberGenerator deployed: ${randomNumberGenerator.address}`);
 
     // Mock qulot lottery
-    const qulotLottery = await (
-      await ethers.getContractFactory("QulotLottery")
-    ).deploy(token.address, randomNumberGenerator.address);
+    const qulotLottery = await (await ethers.getContractFactory("QulotLottery")).deploy(token.address);
     console.log(`QulotLottery deployed: ${qulotLottery.address}`);
+    await qulotLottery.setRandomGenerator(randomNumberGenerator.address);
     await qulotLottery.setOperatorAddress(operator.address);
     await qulotLottery.setTreasuryAddress(treasury.address);
     await randomNumberGenerator.setQulotLottery(qulotLottery.address);

@@ -132,14 +132,9 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      *
      * @notice Constructor
      * @param _tokenAddress Address of the ERC20 token
-     * @param _randomGeneratorAddress address of the RandomGenerator contract used to work with ChainLink
      */
-    constructor(address _tokenAddress, address _randomGeneratorAddress) {
-        // init ERC20 contract
+    constructor(address _tokenAddress) {
         token = IERC20(_tokenAddress);
-
-        // init randomm generators contract
-        randomGenerator = IRandomNumberGenerator(_randomGeneratorAddress);
     }
 
     /* #endregion */
@@ -485,12 +480,12 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     }
 
     /**
-     * @notice Change the random generator
+     * @notice Set the random generator
      * @dev The calls to functions are used to verify the new generator implements them properly.
      * Callable only by the contract owner
      * @param _randomGeneratorAddress: address of the random generator
      */
-    function changeRandomGenerator(address _randomGeneratorAddress) external override onlyOwner {
+    function setRandomGenerator(address _randomGeneratorAddress) external override onlyOwner {
         randomGenerator = IRandomNumberGenerator(_randomGeneratorAddress);
         emit NewRandomGenerator(_randomGeneratorAddress);
     }
