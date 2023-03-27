@@ -1,6 +1,7 @@
 import "@nomicfoundation/hardhat-toolbox";
 import { config as dotenvConfig } from "dotenv";
 import "hardhat-gas-reporter";
+import "hardhat-abi-exporter";
 import type { HardhatUserConfig } from "hardhat/config";
 import type { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
@@ -70,9 +71,11 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
+  // https://www.npmjs.com/package/hardhat-gas-reporter
   gasReporter: {
     enabled: reportGas,
   },
+  // https://www.npmjs.com/package/@nomiclabs/hardhat-etherscan
   etherscan: {
     apiKey: {
       sepolia: etherScanApiKey,
@@ -112,6 +115,15 @@ const config: HardhatUserConfig = {
         runs: 2000,
       },
     },
+  },
+  abiExporter: {
+    path: './data/abi',
+    runOnCompile: true,
+    clear: true,
+    flat: true,
+    only: ['QulotLottery'],
+    spacing: 2,
+    format: "json",
   },
   typechain: {
     outDir: "types",

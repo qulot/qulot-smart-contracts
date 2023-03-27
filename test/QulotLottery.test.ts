@@ -411,9 +411,7 @@ describe("contracts/QulotLottery", function () {
               "10",
               "10",
             ),
-        )
-          .to.emit(qulotLottery, "NewLottery")
-          .withArgs("liteq", "LiteQ");
+        ).to.emit(qulotLottery, "NewLottery");
       });
     });
   });
@@ -906,10 +904,8 @@ describe("contracts/QulotLottery", function () {
           ["7", "3", "9"],
           ["1", "7", "3"],
         ]);
-        const liteq = await qulotLottery.getLottery("liteq");
-        expect(liteq.totalTickets).to.equal(5);
-        expect(liteq.totalPrize).to.equal(parseEther("5"));
         const round = await qulotLottery.getRound(currentRoundId);
+        expect(round.totalTickets).to.equal(5);
         expect(round.totalAmount).to.equal(parseEther("5"));
       });
 

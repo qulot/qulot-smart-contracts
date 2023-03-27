@@ -57,13 +57,37 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     /* #endregion */
 
     /* #region Events */
-    event TicketsPurchase(address indexed buyer, uint256 indexed roundId, uint256[] ticketIds);
-    event TicketsClam(address indexed claimer, uint256 indexed roundId, uint256 amount);
-    event TicketsClaim(address indexed claimer, uint256 amount, uint256 numberTickets);
-    event NewLottery(string indexed lotteryId, string verboseName);
-    event NewRewardRule(string lotteryId, uint32 _matchNumber, RewardUnit rewardUnit, uint256 rewardValue);
-    event RoundOpen(uint256 indexed roundId, uint256 startTime);
-    event RoundClose(uint256 indexed roundId, uint256 endTime);
+    event TicketsPurchase(address indexed buyer, uint256 indexed roundId, uint256[] ticketIds, uint256 amount);
+    event TicketsClaim(address indexed claimer, uint256 amount, uint256[] ticketIds);
+    event NewLottery(
+        string indexed lotteryId,
+        string verboseName,
+        string picture,
+        uint32 numberOfItems,
+        uint32 minValuePerItem,
+        uint32 maxValuePerItem,
+        uint[] periodDays,
+        uint periodHourOfDays,
+        uint32 maxNumberTicketsPerBuy,
+        uint256 pricePerTicket,
+        uint32 treasuryFeePercent,
+        uint32 amountInjectNextRoundPercent
+    );
+    event NewRewardRule(
+        uint indexed ruleIndex,
+        string lotteryId,
+        uint32 matchNumber,
+        RewardUnit rewardUnit,
+        uint256 rewardValue
+    );
+    event RoundOpen(
+        uint256 indexed roundId,
+        string lotteryId,
+        uint256 totalAmount,
+        uint256 startTime,
+        uint256 drawDateTime
+    );
+    event RoundClose(uint256 indexed roundId, uint256 totalAmount, uint256 totalTickets, uint256 endTime);
     event RoundDraw(uint256 indexed roundId, uint32[] numbers);
     event RoundReward(uint256 indexed roundId, uint256 amountTreasury, uint256 amountInjectNextRound);
     event RoundInjection(uint256 indexed roundId, uint256 injectedAmount);
@@ -203,13 +227,24 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             maxNumberTicketsPerBuy: _maxNumberTicketsPerBuy,
             pricePerTicket: _pricePerTicket,
             treasuryFeePercent: _treasuryFeePercent,
-            amountInjectNextRoundPercent: _amountInjectNextRoundPercent,
-            totalPrize: 0,
-            totalTickets: 0
+            amountInjectNextRoundPercent: _amountInjectNextRoundPercent
         });
         lotteryIds.push(_lotteryId);
 
-        emit NewLottery(_lotteryId, _verboseName);
+        emit NewLottery(
+            _lotteryId,
+            _verboseName,
+            _picture,
+            _numberOfItems,
+            _minValuePerItem,
+            _maxValuePerItem,
+            _periodDays,
+            _periodHourOfDays,
+            _maxNumberTicketsPerBuy,
+            _pricePerTicket,
+            _treasuryFeePercent,
+            _amountInjectNextRoundPercent
+        );
     }
 
     /**
@@ -239,7 +274,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             rulesPerLotteryId[_lotteryId].push(
                 Rule({ matchNumber: _matchNumbers[i], rewardUnit: _rewardUnits[i], rewardValue: _rewardValues[i] })
             );
-            emit NewRewardRule(_lotteryId, _matchNumbers[i], _rewardUnits[i], _rewardValues[i]);
+            emit NewRewardRule(i, _lotteryId, _matchNumbers[i], _rewardUnits[i], _rewardValues[i]);
         }
     }
 
@@ -272,9 +307,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
 
         // increment the total amount collected for the round
         rounds[_roundId].totalAmount += amountToTransfer;
-        lotteries[lotteriesPerRoundId[_roundId]].totalPrize += amountToTransfer;
-        lotteries[lotteriesPerRoundId[_roundId]].totalTickets += _tickets.length;
-
+        rounds[_roundId].totalTickets += _tickets.length;
         uint256[] memory purchasedTicketIds = new uint256[](_tickets.length);
         for (uint i = 0; i < _tickets.length; i++) {
             uint32[] memory ticketNumbers = _tickets[i];
@@ -299,7 +332,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             purchasedTicketIds[i] = counterTicketId.current();
         }
 
-        emit TicketsPurchase(msg.sender, _roundId, purchasedTicketIds);
+        emit TicketsPurchase(msg.sender, _roundId, purchasedTicketIds, amountToTransfer);
     }
 
     /**
@@ -324,7 +357,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         // Transfer money to msg.sender
         token.safeTransfer(msg.sender, rewardAmountToTransfer);
 
-        emit TicketsClaim(msg.sender, rewardAmountToTransfer, _ticketIds.length);
+        emit TicketsClaim(msg.sender, rewardAmountToTransfer, _ticketIds);
     }
 
     /**
@@ -351,12 +384,14 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         lotteriesPerRoundId[nextRoundId] = _lotteryId;
 
         // Create new round
+        uint256 totalAmount = amountInjectNextRoundPerLottery[_lotteryId];
         rounds[nextRoundId] = Round({
             firstRoundId: firstRoundId,
             winningNumbers: new uint32[](lotteries[_lotteryId].numberOfItems),
             drawDateTime: _drawDateTime,
             openTime: block.timestamp,
-            totalAmount: amountInjectNextRoundPerLottery[_lotteryId],
+            totalAmount: totalAmount,
+            totalTickets: 0,
             status: RoundStatus.Open
         });
         roundIds.push(nextRoundId);
@@ -365,7 +400,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         amountInjectNextRoundPerLottery[_lotteryId] = 0;
 
         // Emit round open
-        emit RoundOpen(nextRoundId, block.timestamp);
+        emit RoundOpen(nextRoundId, _lotteryId, totalAmount, block.timestamp, _drawDateTime);
     }
 
     /**
@@ -391,7 +426,12 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         );
 
         // Emit round close
-        emit RoundClose(currentRoundId, block.timestamp);
+        emit RoundClose(
+            currentRoundId,
+            rounds[currentRoundId].totalAmount,
+            rounds[currentRoundId].totalTickets,
+            block.timestamp
+        );
     }
 
     /**
@@ -463,7 +503,6 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         require(rounds[_roundId].status == RoundStatus.Open, ERROR_ROUND_NOT_OPEN);
         token.safeTransferFrom(address(msg.sender), address(this), _amount);
         rounds[_roundId].totalAmount += _amount;
-        lotteries[lotteriesPerRoundId[_roundId]].totalPrize += _amount;
         emit RoundInjection(_roundId, _amount);
     }
 
