@@ -561,6 +561,7 @@ describe("contracts/QulotLottery", function () {
         const fixture = await loadFixture(deployQulotLotteryFixture);
         let qulotLottery = fixture.qulotLottery;
         qulotLottery = await initLottery(qulotLottery, fixture.operator);
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
         expect(await qulotLottery.close("liteq")).to.revertedWith("ERROR_NOT_TIME_CLOSE_LOTTERY");
       });
     });
@@ -583,6 +584,7 @@ describe("contracts/QulotLottery", function () {
         let qulotLottery = fixture.qulotLottery;
         // Register new lottery first
         qulotLottery = await initLottery(qulotLottery, fixture.operator);
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
         await qulotLottery.close("liteq");
         await expect(qulotLottery.connect(fixture.operator).draw("")).to.revertedWith("ERROR_INVALID_LOTTERY_ID");
       });
@@ -594,6 +596,7 @@ describe("contracts/QulotLottery", function () {
         let qulotLottery = fixture.qulotLottery;
         // Register new lottery first
         qulotLottery = await initLottery(qulotLottery, fixture.operator);
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
         await qulotLottery.close("liteq");
         await expect(qulotLottery.connect(fixture.other).draw("liteq")).to.revertedWith(
           "ERROR_ONLY_TRIGGER_OR_OPERATOR",

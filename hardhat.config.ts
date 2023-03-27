@@ -27,8 +27,11 @@ if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
 }
 
+const etherScanApiKey = process.env.ETHERSCAN_API_KEY || "";
+const polygonScanApiKey = process.env.POLYGONSCAN_API_KEY || "";
+const reportGas = process.env.REPORT_GAS ? true : false;
+
 const chainIds = {
-  goerli: 5,
   sepolia: 11155111,
   bsc: 56,
   hardhat: 31337,
@@ -68,12 +71,12 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   gasReporter: {
-    enabled: process.env.REPORT_GAS ? true : false,
+    enabled: reportGas,
   },
   etherscan: {
     apiKey: {
-      goerli: process.env.ETHERSCAN_API_KEY || "",
-      sepolia: process.env.ETHERSCAN_API_KEY || "",
+      sepolia: etherScanApiKey,
+      polygonMumbai: polygonScanApiKey,
     },
   },
   networks: {
@@ -83,11 +86,10 @@ const config: HardhatUserConfig = {
       },
       chainId: chainIds.hardhat,
     },
-    goerli: getChainConfig("goerli"),
     sepolia: getChainConfig("sepolia"),
-    // "polygon-mumbai": getChainConfig("polygon-mumbai"),
-    // bsc: getChainConfig("bsc"),
+    "polygon-mumbai": getChainConfig("polygon-mumbai"),
     // "polygon-mainnet": getChainConfig("polygon-mainnet"),
+    // bsc: getChainConfig("bsc"),
   },
   paths: {
     artifacts: "./artifacts",

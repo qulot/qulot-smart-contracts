@@ -376,7 +376,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
         uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
         require(
-            (currentRoundId == 0) || (rounds[currentRoundId].status == RoundStatus.Open),
+            (currentRoundId != 0) && rounds[currentRoundId].status == RoundStatus.Open,
             ERROR_NOT_TIME_CLOSE_LOTTERY
         );
 
@@ -404,7 +404,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
         uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
         require(
-            (currentRoundId == 0) || (rounds[currentRoundId].status == RoundStatus.Close),
+            (currentRoundId != 0) && rounds[currentRoundId].status == RoundStatus.Close,
             ERROR_NOT_TIME_DRAW_LOTTERY
         );
 
@@ -431,8 +431,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
         uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
         require(
-            (currentRoundIdPerLottery[_lotteryId] == 0) ||
-                (rounds[currentRoundIdPerLottery[_lotteryId]].status == RoundStatus.Draw),
+            (currentRoundId != 0) && rounds[currentRoundId].status == RoundStatus.Draw,
             ERROR_NOT_TIME_REWARD_LOTTERY
         );
 
@@ -464,6 +463,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         require(rounds[_roundId].status == RoundStatus.Open, ERROR_ROUND_NOT_OPEN);
         token.safeTransferFrom(address(msg.sender), address(this), _amount);
         rounds[_roundId].totalAmount += _amount;
+        lotteries[lotteriesPerRoundId[_roundId]].totalPrize += _amount;
         emit RoundInjection(_roundId, _amount);
     }
 
