@@ -33,7 +33,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "string",
         "name": "lotteryId",
         "type": "string"
@@ -277,6 +277,12 @@
         "indexed": false,
         "internalType": "uint256",
         "name": "drawDateTime",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "firstRoundId",
         "type": "uint256"
       }
     ],

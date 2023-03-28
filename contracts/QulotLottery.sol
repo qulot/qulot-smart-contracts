@@ -60,7 +60,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     event TicketsPurchase(address indexed buyer, uint256 indexed roundId, uint256[] ticketIds, uint256 amount);
     event TicketsClaim(address indexed claimer, uint256 amount, uint256[] ticketIds);
     event NewLottery(
-        string indexed lotteryId,
+        string lotteryId,
         string verboseName,
         string picture,
         uint32 numberOfItems,
@@ -85,7 +85,8 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         string lotteryId,
         uint256 totalAmount,
         uint256 startTime,
-        uint256 drawDateTime
+        uint256 drawDateTime,
+        uint256 firstRoundId
     );
     event RoundClose(uint256 indexed roundId, uint256 totalAmount, uint256 totalTickets, uint256 endTime);
     event RoundDraw(uint256 indexed roundId, uint32[] numbers);
@@ -400,7 +401,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         amountInjectNextRoundPerLottery[_lotteryId] = 0;
 
         // Emit round open
-        emit RoundOpen(nextRoundId, _lotteryId, totalAmount, block.timestamp, _drawDateTime);
+        emit RoundOpen(nextRoundId, _lotteryId, totalAmount, block.timestamp, _drawDateTime, firstRoundId);
     }
 
     /**
