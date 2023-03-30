@@ -520,6 +520,30 @@ describe("contracts/QulotLottery", function () {
         expect(await qulotLottery.getRound(1)).to.haveOwnProperty("status", 0);
         expect(await qulotLottery.currentRoundIdPerLottery("liteq")).to.equal(1);
       });
+
+      it("Test bulk open lottery, check current round id, check first round id", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        const operator = fixture.operator;
+        let qulotLottery = fixture.qulotLottery;
+        qulotLottery = await initLottery(qulotLottery, operator);
+
+        for (let firstRoundId = 0; firstRoundId < 5; firstRoundId++) {
+          const roundId = firstRoundId + 1;
+          console.log(`Test bulk open lottery, Check round #${roundId}, first round #${firstRoundId}`);
+          await qulotLottery.open("liteq", moment().utc().unix() + 60);
+
+          const currentRoundIdPerLottery = await qulotLottery.currentRoundIdPerLottery("liteq");
+          console.log(`Test bulk open lottery, Current round per liteq #${currentRoundIdPerLottery}`);
+          expect(currentRoundIdPerLottery).to.equal(roundId);
+
+          const round = await qulotLottery.getRound(roundId);
+          expect(round.firstRoundId).to.equal(firstRoundId);
+
+          await qulotLottery.close("liteq");
+          await qulotLottery.draw("liteq");
+          await qulotLottery.reward("liteq");
+        }
+      });
     });
 
     describe("Events", function () {

@@ -375,19 +375,20 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             ERROR_NOT_TIME_OPEN_LOTTERY
         );
 
-        uint256 firstRoundId = currentRoundIdPerLottery[_lotteryId];
         // Increment current round id of lottery to one
         counterRoundId.increment();
         uint256 nextRoundId = counterRoundId.current();
 
         // Keep track lottery id and round id
+        require(nextRoundId > currentRoundIdPerLottery[_lotteryId], "ERROR_ROUND_ID_LESS_THAN_CURRENT");
+
         currentRoundIdPerLottery[_lotteryId] = nextRoundId;
         lotteriesPerRoundId[nextRoundId] = _lotteryId;
 
         // Create new round
         uint256 totalAmount = amountInjectNextRoundPerLottery[_lotteryId];
         rounds[nextRoundId] = Round({
-            firstRoundId: firstRoundId,
+            firstRoundId: currentRoundId,
             winningNumbers: new uint32[](lotteries[_lotteryId].numberOfItems),
             drawDateTime: _drawDateTime,
             openTime: block.timestamp,
@@ -401,7 +402,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         amountInjectNextRoundPerLottery[_lotteryId] = 0;
 
         // Emit round open
-        emit RoundOpen(nextRoundId, _lotteryId, totalAmount, block.timestamp, _drawDateTime, firstRoundId);
+        emit RoundOpen(nextRoundId, _lotteryId, totalAmount, block.timestamp, _drawDateTime, currentRoundId);
     }
 
     /**
