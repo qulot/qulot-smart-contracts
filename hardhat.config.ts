@@ -1,7 +1,7 @@
 import "@nomicfoundation/hardhat-toolbox";
 import { config as dotenvConfig } from "dotenv";
-import "hardhat-gas-reporter";
 import "hardhat-abi-exporter";
+import "hardhat-gas-reporter";
 import type { HardhatUserConfig } from "hardhat/config";
 import type { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
@@ -117,11 +117,11 @@ const config: HardhatUserConfig = {
     },
   },
   abiExporter: {
-    path: './data/abi',
+    path: "./data/abi",
     runOnCompile: true,
     clear: true,
     flat: true,
-    only: ['QulotLottery'],
+    only: ["QulotLottery"],
     spacing: 2,
     format: "json",
   },

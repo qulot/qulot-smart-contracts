@@ -21,7 +21,7 @@ struct Lottery {
 
 struct Round {
     uint32[] winningNumbers;
-    uint256 drawDateTime;
+    uint256 endTime;
     uint256 openTime;
     uint256 totalAmount;
     uint256 totalTickets;

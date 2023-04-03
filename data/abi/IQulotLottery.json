@@ -260,7 +260,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "drawDateTime",
+            "name": "endTime",
             "type": "uint256"
           },
           {
@@ -419,11 +419,6 @@
         "internalType": "string",
         "name": "_lotteryId",
         "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_drawDateTime",
-        "type": "uint256"
       }
     ],
     "name": "open",

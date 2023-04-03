@@ -81,9 +81,8 @@ interface IQulotLottery {
      *
      * @notice Open new round for lottery
      * @param _lotteryId lottery id
-     * @param _drawDateTime New session draw datetime (UTC)
      */
-    function open(string calldata _lotteryId, uint256 _drawDateTime) external;
+    function open(string calldata _lotteryId) external;
 
     /**
      *

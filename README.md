@@ -98,8 +98,8 @@ First initialization for smart contract:
 $ npx hardhat init:QulotLottery \
     --network sepolia \
     --address <deployed-address> \
-    --random-generator-address <deployed-random-generator-address> \
-    --automation-trigger-address <deployed-automation-trigger-address>
+    --random <deployed-random-generator-address> \
+    --automation <deployed-automation-trigger-address>
 ```
 
 ### ChainLinkRandomNumberGenerator (optional)
@@ -119,7 +119,7 @@ First initialization for smart contract:
 $ npx hardhat init:ChainLinkRandomNumberGenerator \
     --network sepolia \
     --address <deployed-address> \
-    --qulot-address <qulot-lottery-address>
+    --qulot <qulot-lottery-address>
 ```
 
 ### QulotAutomationTrigger (optional)
@@ -142,5 +142,5 @@ First initialization for smart contract:
 $ npx hardhat init:QulotAutomationTrigger \
     --network sepolia \
     --address <deployed-address> \
-    --qulot-address <qulot-lottery-address>
+    --qulot <qulot-lottery-address>
 ```

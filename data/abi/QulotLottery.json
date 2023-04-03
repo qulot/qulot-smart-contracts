@@ -125,7 +125,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
         "name": "ruleIndex",
         "type": "uint256"
@@ -181,7 +181,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
         "name": "roundId",
         "type": "uint256"
@@ -197,12 +197,6 @@
         "internalType": "uint256",
         "name": "totalTickets",
         "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "endTime",
-        "type": "uint256"
       }
     ],
     "name": "RoundClose",
@@ -212,7 +206,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
         "name": "roundId",
         "type": "uint256"
@@ -231,7 +225,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
         "name": "roundId",
         "type": "uint256"
@@ -250,7 +244,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
         "name": "roundId",
         "type": "uint256"
@@ -276,12 +270,6 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "drawDateTime",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
         "name": "firstRoundId",
         "type": "uint256"
       }
@@ -293,7 +281,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
         "name": "roundId",
         "type": "uint256"
@@ -308,6 +296,12 @@
         "indexed": false,
         "internalType": "uint256",
         "name": "amountInjectNextRound",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "endTime",
         "type": "uint256"
       }
     ],
@@ -669,7 +663,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "drawDateTime",
+            "name": "endTime",
             "type": "uint256"
           },
           {
@@ -846,11 +840,6 @@
         "internalType": "string",
         "name": "_lotteryId",
         "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_drawDateTime",
-        "type": "uint256"
       }
     ],
     "name": "open",

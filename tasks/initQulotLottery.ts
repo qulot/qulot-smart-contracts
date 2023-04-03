@@ -9,8 +9,8 @@ import { Lottery } from "../typings/lottery";
 
 task("init:QulotLottery", "First init data for Qulot lottery after deployed")
   .addParam("address", "Qulot lottery contract address")
-  .addParam("randomGeneratorAddress", "Qulot random number generator contract address")
-  .addParam("automationTriggerAddress", "Qulot automation trigger contract address")
+  .addParam("random", "Qulot random number generator contract address")
+  .addParam("automation", "Qulot automation trigger contract address")
   .setAction(async function (taskArguments: TaskArguments, { ethers, network }) {
     // Get operator signer
     const [owner, operator] = await ethers.getSigners();
@@ -21,26 +21,22 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
     console.log(`Init Qulot lottery using owner: ${owner.address}, operator: ${operator.address}`);
     const qulotLottery = await ethers.getContractAt("QulotLottery", taskArguments.address, operator);
 
-    const setRandomGeneratorTx = await qulotLottery
-      .connect(owner)
-      .setRandomGenerator(taskArguments.randomGeneratorAddress, {
-        gasLimit: 500000,
-        gasPrice: gasPrice.mul(2),
-      });
+    const setRandomGeneratorTx = await qulotLottery.connect(owner).setRandomGenerator(taskArguments.random, {
+      gasLimit: 500000,
+      gasPrice: gasPrice.mul(2),
+    });
     console.log(
       `[${new Date().toISOString()}] network=${network.name} message='Set random generator contract address #${
-        taskArguments.randomGeneratorAddress
+        taskArguments.random
       }' hash=${setRandomGeneratorTx?.hash} signer=${owner.address}`,
     );
-    const setAutomationTriggerTx = await qulotLottery
-      .connect(owner)
-      .setTriggerAddress(taskArguments.automationTriggerAddress, {
-        gasLimit: 500000,
-        gasPrice: gasPrice.mul(2),
-      });
+    const setAutomationTriggerTx = await qulotLottery.connect(owner).setTriggerAddress(taskArguments.automation, {
+      gasLimit: 500000,
+      gasPrice: gasPrice.mul(2),
+    });
     console.log(
       `[${new Date().toISOString()}] network=${network.name} message='Set automation trigger contract address #${
-        taskArguments.automationTriggerAddress
+        taskArguments.automation
       }' hash=${setAutomationTriggerTx?.hash} signer=${owner.address}`,
     );
 

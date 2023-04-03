@@ -74,24 +74,17 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         uint32 amountInjectNextRoundPercent
     );
     event NewRewardRule(
-        uint indexed ruleIndex,
+        uint ruleIndex,
         string lotteryId,
         uint32 matchNumber,
         RewardUnit rewardUnit,
         uint256 rewardValue
     );
-    event RoundOpen(
-        uint256 indexed roundId,
-        string lotteryId,
-        uint256 totalAmount,
-        uint256 startTime,
-        uint256 drawDateTime,
-        uint256 firstRoundId
-    );
-    event RoundClose(uint256 indexed roundId, uint256 totalAmount, uint256 totalTickets, uint256 endTime);
-    event RoundDraw(uint256 indexed roundId, uint32[] numbers);
-    event RoundReward(uint256 indexed roundId, uint256 amountTreasury, uint256 amountInjectNextRound);
-    event RoundInjection(uint256 indexed roundId, uint256 injectedAmount);
+    event RoundOpen(uint256 roundId, string lotteryId, uint256 totalAmount, uint256 startTime, uint256 firstRoundId);
+    event RoundClose(uint256 roundId, uint256 totalAmount, uint256 totalTickets);
+    event RoundDraw(uint256 roundId, uint32[] numbers);
+    event RoundReward(uint256 roundId, uint256 amountTreasury, uint256 amountInjectNextRound, uint256 endTime);
+    event RoundInjection(uint256 roundId, uint256 injectedAmount);
     event NewRandomGenerator(address randomGeneratorAddress);
     event AdminTokenRecovery(address token, uint256 amount);
     /* #endregion */
@@ -290,8 +283,6 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         require(_tickets.length != 0, ERROR_TICKETS_EMPTY);
         // check round is open
         require(rounds[_roundId].status == RoundStatus.Open, ERROR_ROUND_IS_CLOSED);
-        // check round too late
-        require(block.timestamp < rounds[_roundId].drawDateTime, ERROR_ROUND_IS_CLOSED);
         // check limit ticket
         require(
             _tickets.length <= lotteries[lotteriesPerRoundId[_roundId]].maxNumberTicketsPerBuy,
@@ -364,11 +355,9 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     /**
      *
      * @param _lotteryId lottery id
-     * @param _drawDateTime New round draw datetime (UTC)
      */
-    function open(string calldata _lotteryId, uint256 _drawDateTime) external override onlyOperatorOrTrigger {
+    function open(string calldata _lotteryId) external override onlyOperatorOrTrigger {
         require(!String.isEmpty(_lotteryId), ERROR_INVALID_LOTTERY_ID);
-        require(_drawDateTime > 0, ERROR_INVALID_ROUND_DRAW_TIME);
         uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
         require(
             (currentRoundId == 0) || (rounds[currentRoundId].status == RoundStatus.Reward),
@@ -390,8 +379,8 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         rounds[nextRoundId] = Round({
             firstRoundId: currentRoundId,
             winningNumbers: new uint32[](lotteries[_lotteryId].numberOfItems),
-            drawDateTime: _drawDateTime,
             openTime: block.timestamp,
+            endTime: 0,
             totalAmount: totalAmount,
             totalTickets: 0,
             status: RoundStatus.Open
@@ -402,7 +391,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         amountInjectNextRoundPerLottery[_lotteryId] = 0;
 
         // Emit round open
-        emit RoundOpen(nextRoundId, _lotteryId, totalAmount, block.timestamp, _drawDateTime, currentRoundId);
+        emit RoundOpen(nextRoundId, _lotteryId, totalAmount, block.timestamp, currentRoundId);
     }
 
     /**
@@ -428,12 +417,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         );
 
         // Emit round close
-        emit RoundClose(
-            currentRoundId,
-            rounds[currentRoundId].totalAmount,
-            rounds[currentRoundId].totalTickets,
-            block.timestamp
-        );
+        emit RoundClose(currentRoundId, rounds[currentRoundId].totalAmount, rounds[currentRoundId].totalTickets);
     }
 
     /**
@@ -479,6 +463,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
 
         // Set round status to reward
         rounds[currentRoundId].status = RoundStatus.Reward;
+        rounds[currentRoundId].endTime = block.timestamp;
 
         // Estimate
         (uint256 amountTreasury, uint256 amountInject, uint256 rewardAmount) = _estimateReward(
@@ -492,7 +477,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         // Transfer token to treasury address
         token.safeTransfer(treasuryAddress, amountTreasury);
         // Emit round Draw
-        emit RoundReward(currentRoundId, amountTreasury, amountInject);
+        emit RoundReward(currentRoundId, amountTreasury, amountInject, block.timestamp);
     }
 
     /**
