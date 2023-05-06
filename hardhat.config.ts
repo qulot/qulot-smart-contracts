@@ -5,6 +5,7 @@ import "hardhat-gas-reporter";
 import type { HardhatUserConfig } from "hardhat/config";
 import type { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
+import "solidity-coverage";
 
 import "./tasks/deployChainLinkRandomNumberGenerator";
 import "./tasks/deployQulotAutomationTrigger";
@@ -112,7 +113,7 @@ const config: HardhatUserConfig = {
       // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
-        runs: 2000,
+        runs: 200,
       },
     },
   },

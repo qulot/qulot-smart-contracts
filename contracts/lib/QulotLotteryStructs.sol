@@ -17,6 +17,7 @@ struct Lottery {
     uint256 pricePerTicket;
     uint32 treasuryFeePercent;
     uint32 amountInjectNextRoundPercent;
+    uint32 discountPercent;
 }
 
 struct Round {

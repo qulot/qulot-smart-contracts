@@ -12,6 +12,7 @@
     "pricePerTicket": 1,
     "treasuryFeePercent": 10,
     "amountInjectNextRoundPercent": 0,
+    "discountPercent": 10,
     "rewardRules": [
       {
         "matchNumber": 3,
