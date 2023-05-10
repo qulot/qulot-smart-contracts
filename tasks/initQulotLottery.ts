@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers";
-import { parseEther } from "ethers/lib/utils";
+import { parseUnits } from "ethers/lib/utils";
 import { task } from "hardhat/config";
 import type { TaskArguments } from "hardhat/types";
 import { inspect } from "util";
@@ -20,6 +20,11 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
 
     console.log(`Init Qulot lottery using owner: ${owner.address}, operator: ${operator.address}`);
     const qulotLottery = await ethers.getContractAt("QulotLottery", taskArguments.address, operator);
+    const token = await ethers.getContractAt("ERC20", await qulotLottery.token());
+    const [tokenSymbol, tokenDecimals] = await Promise.all([token.symbol(), token.decimals()]);
+
+    // Fetch token info
+    console.log(`Qulot lottery using token: ${tokenSymbol}, decimals: ${tokenDecimals}`);
 
     const setRandomGeneratorTx = await qulotLottery.connect(owner).setRandomGenerator(taskArguments.random, {
       gasLimit: 500000,
@@ -55,7 +60,7 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
           amountInjectNextRoundPercent: lottery.amountInjectNextRoundPercent,
           periodDays: lottery.periodDays,
           periodHourOfDays: lottery.periodHourOfDays,
-          pricePerTicket: parseEther(lottery.pricePerTicket.toString()),
+          pricePerTicket: parseUnits(lottery.pricePerTicket.toString(), tokenDecimals),
           treasuryFeePercent: lottery.treasuryFeePercent,
           discountPercent: lottery.discountPercent,
         },
@@ -75,7 +80,7 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
         (curr, rewardRule) => {
           curr.matchNumbers.push(rewardRule.matchNumber);
           curr.rewardUnits.push(rewardRule.rewardUnit);
-          curr.rewardValues.push(parseEther(rewardRule.rewardValue.toString()));
+          curr.rewardValues.push(parseUnits(rewardRule.rewardValue.toString(), tokenDecimals));
           return curr;
         },
         {
