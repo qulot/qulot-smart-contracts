@@ -1,9 +1,11 @@
 import "@nomicfoundation/hardhat-toolbox";
 import { config as dotenvConfig } from "dotenv";
+import "hardhat-abi-exporter";
 import "hardhat-gas-reporter";
 import type { HardhatUserConfig } from "hardhat/config";
 import type { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
+import "solidity-coverage";
 
 import "./tasks/deployChainLinkRandomNumberGenerator";
 import "./tasks/deployQulotAutomationTrigger";
@@ -27,8 +29,11 @@ if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
 }
 
+const etherScanApiKey = process.env.ETHERSCAN_API_KEY || "";
+const polygonScanApiKey = process.env.POLYGONSCAN_API_KEY || "";
+const reportGas = process.env.REPORT_GAS ? true : false;
+
 const chainIds = {
-  goerli: 5,
   sepolia: 11155111,
   bsc: 56,
   hardhat: 31337,
@@ -67,13 +72,15 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
+  // https://www.npmjs.com/package/hardhat-gas-reporter
   gasReporter: {
-    enabled: process.env.REPORT_GAS ? true : false,
+    enabled: reportGas,
   },
+  // https://www.npmjs.com/package/@nomiclabs/hardhat-etherscan
   etherscan: {
     apiKey: {
-      goerli: process.env.ETHERSCAN_API_KEY || "",
-      sepolia: process.env.ETHERSCAN_API_KEY || "",
+      sepolia: etherScanApiKey,
+      polygonMumbai: polygonScanApiKey,
     },
   },
   networks: {
@@ -83,11 +90,10 @@ const config: HardhatUserConfig = {
       },
       chainId: chainIds.hardhat,
     },
-    goerli: getChainConfig("goerli"),
     sepolia: getChainConfig("sepolia"),
-    // "polygon-mumbai": getChainConfig("polygon-mumbai"),
-    // bsc: getChainConfig("bsc"),
+    "polygon-mumbai": getChainConfig("polygon-mumbai"),
     // "polygon-mainnet": getChainConfig("polygon-mainnet"),
+    // bsc: getChainConfig("bsc"),
   },
   paths: {
     artifacts: "./artifacts",
@@ -107,9 +113,18 @@ const config: HardhatUserConfig = {
       // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
-        runs: 2000,
+        runs: 200,
       },
     },
+  },
+  abiExporter: {
+    path: "./data/abi",
+    runOnCompile: true,
+    clear: true,
+    flat: true,
+    only: ["QulotLottery"],
+    spacing: 2,
+    format: "json",
   },
   typechain: {
     outDir: "types",

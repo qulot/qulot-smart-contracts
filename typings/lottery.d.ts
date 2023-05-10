@@ -17,5 +17,6 @@ export interface Lottery {
   pricePerTicket: number;
   treasuryFeePercent: number;
   amountInjectNextRoundPercent: number;
+  discountPercent: number;
   rewardRules: RewardRule[];
 }

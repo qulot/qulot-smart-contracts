@@ -3,7 +3,7 @@ import type { TaskArguments } from "hardhat/types";
 
 task("init:ChainLinkRandomNumberGenerator", "First init data for ChainLinkRandomNumberGenerator after deployed")
   .addParam("address", "ChainLink random number generator contract address")
-  .addParam("qulotAddress", "Qulot lottery contract address")
+  .addParam("qulot", "Qulot lottery contract address")
   .setAction(async function (taskArguments: TaskArguments, { ethers, network }) {
     // Get operator signer
     const [owner] = await ethers.getSigners();
@@ -20,13 +20,13 @@ task("init:ChainLinkRandomNumberGenerator", "First init data for ChainLinkRandom
 
     const setQulotLotteryAddressTx = await chainLinkRandomNumberGenerator
       .connect(owner)
-      .setQulotLottery(taskArguments.qulotAddress, {
+      .setQulotLottery(taskArguments.qulot, {
         gasLimit: 500000,
         gasPrice: gasPrice.mul(2),
       });
     console.log(
       `[${new Date().toISOString()}] network=${network.name} message='Set qulot lottery address #${
-        taskArguments.qulotAddress
+        taskArguments.qulot
       }' hash=${setQulotLotteryAddressTx?.hash} signer=${owner.address}`,
     );
   });

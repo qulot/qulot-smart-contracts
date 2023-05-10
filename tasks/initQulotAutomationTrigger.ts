@@ -4,24 +4,24 @@ import type { TaskArguments } from "hardhat/types";
 import { inspect } from "util";
 
 enum JobType {
-  TriggerOpenLottery,
-  TriggerCloseLottery,
-  TriggerDrawLottery,
-  TriggerRewardLottery,
+  TriggerCloseLottery = 1, // step 1
+  TriggerDrawLottery = 2, // step 2
+  TriggerRewardLottery = 3, // step 3
+  TriggerOpenLottery = 0, // step 4
 }
 
 type JobTypeKeys = keyof typeof JobType;
 
 function getJobId(lotteryId: string, jobType: JobType) {
   switch (jobType) {
-    case JobType.TriggerOpenLottery:
-      return lotteryId + ":open";
     case JobType.TriggerCloseLottery:
       return lotteryId + ":close";
     case JobType.TriggerDrawLottery:
       return lotteryId + ":draw";
     case JobType.TriggerRewardLottery:
       return lotteryId + ":reward";
+    case JobType.TriggerOpenLottery:
+      return lotteryId + ":open";
   }
 }
 
@@ -36,11 +36,22 @@ function getJobCronSpec(periodDays: number[], periodHourOfDays: number, jobType:
     case JobType.TriggerOpenLottery:
       return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 12);
   }
+
+  switch (jobType) {
+    case JobType.TriggerCloseLottery:
+      return cronTime.everyHourAt(0);
+    case JobType.TriggerDrawLottery:
+      return cronTime.everyHourAt(4);
+    case JobType.TriggerRewardLottery:
+      return cronTime.everyHourAt(8);
+    case JobType.TriggerOpenLottery:
+      return cronTime.everyHourAt(12);
+  }
 }
 
 task("init:QulotAutomationTrigger", "First init data for QulotAutomationTrigger after deployed")
   .addParam("address", "Qulot automation trigger contract address")
-  .addParam("qulotAddress", "Qulot lottery contract address")
+  .addParam("qulot", "Qulot lottery contract address")
   .setAction(async function (taskArguments: TaskArguments, { ethers, network }) {
     // Get operator signer
     const [owner, operator] = await ethers.getSigners();
@@ -55,19 +66,17 @@ task("init:QulotAutomationTrigger", "First init data for QulotAutomationTrigger 
       operator,
     );
 
-    const setQulotLotteryAddressTx = await qulotAutomationTrigger
-      .connect(owner)
-      .setQulotLottery(taskArguments.qulotAddress, {
-        gasLimit: 500000,
-        gasPrice: gasPrice.mul(2),
-      });
+    const setQulotLotteryAddressTx = await qulotAutomationTrigger.connect(owner).setQulotLottery(taskArguments.qulot, {
+      gasLimit: 500000,
+      gasPrice: gasPrice.mul(2),
+    });
     console.log(
       `[${new Date().toISOString()}] network=${network.name} message='Set qulot lottery address #${
-        taskArguments.qulotAddress
+        taskArguments.qulot
       }' hash=${setQulotLotteryAddressTx?.hash} signer=${owner.address}`,
     );
 
-    const qulotLottery = await ethers.getContractAt("QulotLottery", taskArguments.qulotAddress);
+    const qulotLottery = await ethers.getContractAt("QulotLottery", taskArguments.qulot);
     const lotteryIds = await qulotLottery.getLotteryIds();
     console.log(`Qulot lottery returns lotteries ${inspect(lotteryIds)}`);
 

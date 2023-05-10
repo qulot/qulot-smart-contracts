@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers";
-import { parseEther } from "ethers/lib/utils";
+import { parseUnits } from "ethers/lib/utils";
 import { task } from "hardhat/config";
 import type { TaskArguments } from "hardhat/types";
 import { inspect } from "util";
@@ -9,8 +9,8 @@ import { Lottery } from "../typings/lottery";
 
 task("init:QulotLottery", "First init data for Qulot lottery after deployed")
   .addParam("address", "Qulot lottery contract address")
-  .addParam("randomGeneratorAddress", "Qulot random number generator contract address")
-  .addParam("automationTriggerAddress", "Qulot automation trigger contract address")
+  .addParam("random", "Qulot random number generator contract address")
+  .addParam("automation", "Qulot automation trigger contract address")
   .setAction(async function (taskArguments: TaskArguments, { ethers, network }) {
     // Get operator signer
     const [owner, operator] = await ethers.getSigners();
@@ -20,27 +20,28 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
 
     console.log(`Init Qulot lottery using owner: ${owner.address}, operator: ${operator.address}`);
     const qulotLottery = await ethers.getContractAt("QulotLottery", taskArguments.address, operator);
+    const token = await ethers.getContractAt("ERC20", await qulotLottery.token());
+    const [tokenSymbol, tokenDecimals] = await Promise.all([token.symbol(), token.decimals()]);
 
-    const setRandomGeneratorTx = await qulotLottery
-      .connect(owner)
-      .setRandomGenerator(taskArguments.randomGeneratorAddress, {
-        gasLimit: 500000,
-        gasPrice: gasPrice.mul(2),
-      });
+    // Fetch token info
+    console.log(`Qulot lottery using token: ${tokenSymbol}, decimals: ${tokenDecimals}`);
+
+    const setRandomGeneratorTx = await qulotLottery.connect(owner).setRandomGenerator(taskArguments.random, {
+      gasLimit: 500000,
+      gasPrice: gasPrice.mul(2),
+    });
     console.log(
       `[${new Date().toISOString()}] network=${network.name} message='Set random generator contract address #${
-        taskArguments.randomGeneratorAddress
+        taskArguments.random
       }' hash=${setRandomGeneratorTx?.hash} signer=${owner.address}`,
     );
-    const setAutomationTriggerTx = await qulotLottery
-      .connect(owner)
-      .setTriggerAddress(taskArguments.automationTriggerAddress, {
-        gasLimit: 500000,
-        gasPrice: gasPrice.mul(2),
-      });
+    const setAutomationTriggerTx = await qulotLottery.connect(owner).setTriggerAddress(taskArguments.automation, {
+      gasLimit: 500000,
+      gasPrice: gasPrice.mul(2),
+    });
     console.log(
       `[${new Date().toISOString()}] network=${network.name} message='Set automation trigger contract address #${
-        taskArguments.automationTriggerAddress
+        taskArguments.automation
       }' hash=${setAutomationTriggerTx?.hash} signer=${owner.address}`,
     );
 
@@ -49,17 +50,20 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
       console.log(`Add lottery id: ${lottery.id}`);
       const addLotteryTx = await qulotLottery.addLottery(
         lottery.id,
-        lottery.picture,
-        lottery.verboseName,
-        lottery.numberOfItems,
-        lottery.minValuePerItem,
-        lottery.maxValuePerItem,
-        lottery.periodDays,
-        lottery.periodHourOfDays,
-        lottery.maxNumberTicketsPerBuy,
-        parseEther(lottery.pricePerTicket.toString()),
-        lottery.treasuryFeePercent,
-        lottery.amountInjectNextRoundPercent,
+        {
+          verboseName: lottery.verboseName,
+          picture: lottery.picture,
+          numberOfItems: lottery.numberOfItems,
+          minValuePerItem: lottery.minValuePerItem,
+          maxValuePerItem: lottery.maxValuePerItem,
+          maxNumberTicketsPerBuy: lottery.maxNumberTicketsPerBuy,
+          amountInjectNextRoundPercent: lottery.amountInjectNextRoundPercent,
+          periodDays: lottery.periodDays,
+          periodHourOfDays: lottery.periodHourOfDays,
+          pricePerTicket: parseUnits(lottery.pricePerTicket.toString(), tokenDecimals),
+          treasuryFeePercent: lottery.treasuryFeePercent,
+          discountPercent: lottery.discountPercent,
+        },
         {
           gasLimit: 500000,
           gasPrice: gasPrice.mul(2),
@@ -76,7 +80,7 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
         (curr, rewardRule) => {
           curr.matchNumbers.push(rewardRule.matchNumber);
           curr.rewardUnits.push(rewardRule.rewardUnit);
-          curr.rewardValues.push(parseEther(rewardRule.rewardValue.toString()));
+          curr.rewardValues.push(parseUnits(rewardRule.rewardValue.toString(), tokenDecimals));
           return curr;
         },
         {

@@ -57,14 +57,41 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
     function checkUpkeep(
         bytes calldata /* checkData */
     ) external view override returns (bool upkeepNeeded, bytes memory performData) {
-        if (jobIds.length == 0) {
+        // DEV: start at a random spot in the list so that checks are
+        // spread evenly among cron jobs
+        uint256 numCrons = jobIds.length;
+        if (numCrons == 0) {
             return (false, bytes(""));
         }
-        for (uint i = 0; i < jobIds.length; i++) {
-            string memory jobId = jobIds[i];
-            uint256 lastTick = specs[jobId].lastTick();
-            if (lastTick > lastRuns[jobId]) {
-                return (true, abi.encode(jobId, lastTick));
+        uint256 startIdx = block.number % numCrons;
+        bool result;
+        bytes memory payload;
+        (result, payload) = checkInRange(startIdx, numCrons);
+        if (result) {
+            return (result, payload);
+        }
+        (result, payload) = checkInRange(0, startIdx);
+        if (result) {
+            return (result, payload);
+        }
+        return (false, bytes(""));
+    }
+
+    /**
+     * @notice checks the cron jobs in a given range
+     * @param start the starting id to check (inclusive)
+     * @param end the ending id to check (exclusive)
+     * @return upkeepNeeded signals if upkeep is needed, performData is an abi encoding
+     * of the id and "next tick" of the eligible cron job
+     */
+    function checkInRange(uint start, uint end) private view returns (bool, bytes memory) {
+        string memory id;
+        uint256 lastTick;
+        for (uint256 idx = start; idx < end; idx++) {
+            id = jobIds[idx];
+            lastTick = specs[id].lastTick();
+            if (lastTick > lastRuns[id]) {
+                return (true, abi.encode(id, lastTick));
             }
         }
     }
@@ -80,7 +107,7 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
      */
     function performUpkeep(bytes calldata performData) external override {
         (string memory jobId, uint256 tickTime) = abi.decode(performData, (string, uint256));
-
+        tickTime = _removeTimestampSeconds(tickTime);
         if (block.timestamp < tickTime) {
             revert TickInFuture();
         }
@@ -104,7 +131,7 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
         TriggerJob memory job = jobs[jobId];
 
         if (job.jobType == JobType.TriggerOpenLottery) {
-            qulotLottery.open(job.lotteryId, specs[jobId].nextTick());
+            qulotLottery.open(job.lotteryId);
         } else if (job.jobType == JobType.TriggerCloseLottery) {
             qulotLottery.close(job.lotteryId);
         } else if (job.jobType == JobType.TriggerDrawLottery) {
@@ -183,5 +210,13 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
     function setOperatorAddress(address _operatorAddress) external onlyOwner {
         require(_operatorAddress != address(0), ERROR_INVALID_ZERO_ADDRESS);
         operatorAddress = _operatorAddress;
+    }
+
+    /**
+     * @notice Remove seconds from timestamp
+     * @param _timestamp timestamp
+     */
+    function _removeTimestampSeconds(uint256 _timestamp) private pure returns (uint256) {
+        return _timestamp - (_timestamp % 60);
     }
 }

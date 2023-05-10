@@ -18,33 +18,10 @@ interface IQulotLottery {
      *
      * @notice Add new lottery. Only call when deploying smart contact for the first time
      * @param _lotteryId lottery id
-     * @param _picture Lottery picture
-     * @param _verboseName Verbose name of lottery
-     * @param _numberOfItems Numbers on the ticket
-     * @param _minValuePerItem Min value per number on the ticket
-     * @param _maxValuePerItem Max value per number on the ticket
-     * @param _periodDays Daily period of round
-     * @param _periodHourOfDays Hourly period of round
-     * @param _maxNumberTicketsPerBuy Maximum number of tickets that can be purchased
-     * @param _pricePerTicket Price per ticket
-     * @param _treasuryFeePercent Treasury fee
-     * @param _amountInjectNextRoundPercent Amount inject for next round
+     * @param _lottery lottery id
      * @dev Callable by operator
      */
-    function addLottery(
-        string memory _lotteryId,
-        string memory _picture,
-        string memory _verboseName,
-        uint32 _numberOfItems,
-        uint32 _minValuePerItem,
-        uint32 _maxValuePerItem,
-        uint[] memory _periodDays,
-        uint _periodHourOfDays,
-        uint32 _maxNumberTicketsPerBuy,
-        uint256 _pricePerTicket,
-        uint32 _treasuryFeePercent,
-        uint32 _amountInjectNextRoundPercent
-    ) external;
+    function addLottery(string calldata _lotteryId, Lottery calldata _lottery) external;
 
     /**
      * @notice Add more rule reward for lottery payout. Only call when deploying smart contact for the first time
@@ -71,6 +48,15 @@ interface IQulotLottery {
     function buyTickets(uint256 _roundId, uint32[][] calldata _tickets) external;
 
     /**
+     *
+     * @notice Buy tickets for the multi rounds
+     * @param _roundIds Rround id
+     * @param _tickets array of ticket
+     * @dev Callable by users
+     */
+    function buyTicketsMultiRounds(uint256[] calldata _roundIds, uint32[][] calldata _tickets) external;
+
+    /**
      * @notice Claim a set of winning tickets for a lottery
      * @param _ticketIds: array of ticket ids
      * @dev Callable by users only, not contract!
@@ -81,9 +67,8 @@ interface IQulotLottery {
      *
      * @notice Open new round for lottery
      * @param _lotteryId lottery id
-     * @param _drawDateTime New session draw datetime (UTC)
      */
-    function open(string calldata _lotteryId, uint256 _drawDateTime) external;
+    function open(string calldata _lotteryId) external;
 
     /**
      *
