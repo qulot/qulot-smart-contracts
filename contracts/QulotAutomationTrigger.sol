@@ -86,12 +86,11 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
      */
     function checkInRange(uint start, uint end) private view returns (bool, bytes memory) {
         string memory id;
-        uint256 lastTick;
+        uint256 timestamp = _removeTimestampSeconds(block.timestamp);
         for (uint256 idx = start; idx < end; idx++) {
             id = jobIds[idx];
-            lastTick = specs[id].lastTick();
-            if (lastTick > lastRuns[id]) {
-                return (true, abi.encode(id, lastTick));
+            if (specs[id].matches(timestamp)) {
+                return (true, abi.encode(id));
             }
         }
     }
@@ -106,18 +105,7 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
      * validated against the contract's current state.
      */
     function performUpkeep(bytes calldata performData) external override {
-        (string memory jobId, uint256 tickTime) = abi.decode(performData, (string, uint256));
-        tickTime = _removeTimestampSeconds(tickTime);
-        if (block.timestamp < tickTime) {
-            revert TickInFuture();
-        }
-        if (tickTime <= lastRuns[jobId]) {
-            revert TickTooOld();
-        }
-        if (!specs[jobId].matches(tickTime)) {
-            revert TickDoesntMatchSpec();
-        }
-
+        string memory jobId = abi.decode(performData, (string));
         excuteJob(jobId);
     }
 

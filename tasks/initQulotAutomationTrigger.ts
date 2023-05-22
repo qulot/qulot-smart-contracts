@@ -1,7 +1,10 @@
 import cronTime from "cron-time-generator";
+import { BigNumber } from "ethers";
 import { task } from "hardhat/config";
 import type { TaskArguments } from "hardhat/types";
 import { inspect } from "util";
+
+import { isEveryDay } from "../utils/cron";
 
 enum JobType {
   TriggerCloseLottery = 1, // step 1
@@ -26,26 +29,27 @@ function getJobId(lotteryId: string, jobType: JobType) {
 }
 
 function getJobCronSpec(periodDays: number[], periodHourOfDays: number, jobType: JobType) {
+  if (isEveryDay(periodDays)) {
+    switch (jobType) {
+      case JobType.TriggerCloseLottery:
+        return cronTime.everyDayAt(periodHourOfDays, 0);
+      case JobType.TriggerDrawLottery:
+        return cronTime.everyDayAt(periodHourOfDays, 5);
+      case JobType.TriggerRewardLottery:
+        return cronTime.everyDayAt(periodHourOfDays, 10);
+      case JobType.TriggerOpenLottery:
+        return cronTime.everyDayAt(periodHourOfDays, 15);
+    }
+  }
   switch (jobType) {
     case JobType.TriggerCloseLottery:
       return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 0);
     case JobType.TriggerDrawLottery:
-      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 4);
+      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 5);
     case JobType.TriggerRewardLottery:
-      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 8);
+      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 10);
     case JobType.TriggerOpenLottery:
-      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 12);
-  }
-
-  switch (jobType) {
-    case JobType.TriggerCloseLottery:
-      return cronTime.everyHourAt(0);
-    case JobType.TriggerDrawLottery:
-      return cronTime.everyHourAt(4);
-    case JobType.TriggerRewardLottery:
-      return cronTime.everyHourAt(8);
-    case JobType.TriggerOpenLottery:
-      return cronTime.everyHourAt(12);
+      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 15);
   }
 }
 
@@ -86,7 +90,7 @@ task("init:QulotAutomationTrigger", "First init data for QulotAutomationTrigger 
       const lottery = await qulotLottery.getLottery(lotteryId);
       console.log(`Add trigger jobs for lottery ${inspect(lottery)}`);
 
-      const periodDays = lottery.periodDays.map((period) => period.toNumber());
+      const periodDays = lottery.periodDays.map((period: BigNumber) => period.toNumber());
       const periodHourOfDays = lottery.periodHourOfDays.toNumber();
 
       for (const jobTypeKey of triggerJobTypeKeys) {

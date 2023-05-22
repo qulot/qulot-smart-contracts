@@ -52,9 +52,9 @@
       },
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
+        "internalType": "uint256[]",
+        "name": "ticketPrices",
+        "type": "uint256[]"
       }
     ],
     "name": "MultiRoundsTicketsPurchase",

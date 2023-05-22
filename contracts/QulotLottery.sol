@@ -57,7 +57,12 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
 
     /* #region Events */
     event TicketsPurchase(address indexed buyer, uint256 indexed roundId, uint256[] ticketIds, uint256 amount);
-    event MultiRoundsTicketsPurchase(address indexed buyer, uint256[] roundIds, uint256[] ticketIds, uint256 amount);
+    event MultiRoundsTicketsPurchase(
+        address indexed buyer,
+        uint256[] roundIds,
+        uint256[] ticketIds,
+        uint256[] ticketPrices
+    );
     event TicketsClaim(address indexed claimer, uint256 amount, uint256[] ticketIds);
     event NewLottery(string lotteryId, Lottery lottery);
     event NewRewardRule(
@@ -298,6 +303,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         uint256 amountToTransfer;
 
         uint256[] memory purchasedTicketIds = new uint256[](_tickets.length);
+        uint256[] memory purchasedTicketPrices = new uint256[](_tickets.length);
         for (uint idx = 0; idx < _roundIds.length; idx++) {
             uint256 roundId = _roundIds[idx];
             // check round is open
@@ -323,6 +329,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
             // Increment lottery ticket number
             counterTicketId.increment();
 
+            // Set new ticket to mapping tickets
             uint256 newTicketId = counterTicketId.current();
             tickets[newTicketId] = Ticket({
                 owner: msg.sender,
@@ -334,14 +341,20 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
                 clamStatus: false
             });
             ticketIds.push(newTicketId);
+
+            // Set new ticket to user
             ticketsPerUserId[msg.sender].push(newTicketId);
+
+            // Set new ticket to round
             ticketsPerRoundId[roundId].push(newTicketId);
+
             purchasedTicketIds[idx] = newTicketId;
+            purchasedTicketPrices[idx] = ticketPrice;
         }
 
         // transfer tokens to this contract
         token.safeTransferFrom(address(msg.sender), address(this), amountToTransfer);
-        emit MultiRoundsTicketsPurchase(msg.sender, _roundIds, purchasedTicketIds, amountToTransfer);
+        emit MultiRoundsTicketsPurchase(msg.sender, _roundIds, purchasedTicketIds, purchasedTicketPrices);
     }
 
     /**
