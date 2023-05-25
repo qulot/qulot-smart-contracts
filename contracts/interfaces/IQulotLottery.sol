@@ -116,20 +116,22 @@ interface IQulotLottery {
     function getRound(uint256 _roundId) external view returns (Round memory round);
 
     /**
-     * @notice Return a list of ticket ids
+     * @notice Return a length of ticket ids by user address
      */
-    function getTicketIds() external view returns (uint256[] memory ticketIds);
+    function getTicketIdsByUserLength(address _user) external view returns (uint256);
 
     /**
      * @notice Return a list of ticket ids by user address
      * @param _user: user address
      * @param _cursor: cursor to start where to retrieve the tickets
      * @param _size: the number of tickets to retrieve
+     * @param _asc: get list order by ascending
      */
     function getTicketIdsByUser(
         address _user,
         uint256 _cursor,
-        uint256 _size
+        uint256 _size,
+        bool _asc
     ) external view returns (uint256[] memory ticketIds, uint256 cursor);
 
     /**

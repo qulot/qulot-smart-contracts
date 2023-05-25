@@ -607,10 +607,10 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     }
 
     /**
-     * @notice Return a list of ticket ids
+     * @notice Return a length of ticket ids by user address
      */
-    function getTicketIds() external view override returns (uint256[] memory) {
-        return ticketIds;
+    function getTicketIdsByUserLength(address _user) external view override returns (uint256) {
+        return ticketsPerUserId[_user].length;
     }
 
     /**
@@ -618,21 +618,30 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
      * @param _user: user address
      * @param _cursor: cursor to start where to retrieve the tickets
      * @param _size: the number of tickets to retrieve
+     * @param _asc: get list order by ascending
      */
     function getTicketIdsByUser(
         address _user,
         uint256 _cursor,
-        uint256 _size
+        uint256 _size,
+        bool _asc
     ) external view override returns (uint256[] memory ids, uint256 cursor) {
-        uint256 numberTicketsBoughtAtLotteryId = ticketsPerUserId[_user].length;
-        if (_size > (numberTicketsBoughtAtLotteryId - _cursor)) {
-            _size = numberTicketsBoughtAtLotteryId - _cursor;
+        if (_asc) {
+            if (_size > ticketsPerUserId[_user].length - _cursor) {
+                _size = ticketsPerUserId[_user].length - _cursor;
+            }
+        } else {
+            if (_size > _cursor) {
+                _size = _cursor;
+            }
         }
         ids = new uint256[](_size);
+        uint256 idx;
         for (uint256 i = 0; i < _size; i++) {
-            ids[i] = ticketsPerUserId[_user][i + _cursor];
+            idx = _asc ? _cursor + i : _cursor - i - 1;
+            ids[i] = ticketsPerUserId[_user][idx];
         }
-        cursor = _cursor + _size;
+        cursor = _asc ? _cursor + _size : _cursor - _size;
     }
 
     /**
@@ -715,14 +724,12 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         if (_numbers.length != _lottery.numberOfItems) {
             return false;
         }
-
         for (uint i = 0; i < _numbers.length; i++) {
             uint32 number = _numbers[i];
             if (number < _lottery.minValuePerItem || number > _lottery.maxValuePerItem) {
                 return false;
             }
         }
-
         return true;
     }
 

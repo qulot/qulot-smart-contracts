@@ -92,8 +92,6 @@ const config: HardhatUserConfig = {
     },
     sepolia: getChainConfig("sepolia"),
     "polygon-mumbai": getChainConfig("polygon-mumbai"),
-    // "polygon-mainnet": getChainConfig("polygon-mainnet"),
-    // bsc: getChainConfig("bsc"),
   },
   paths: {
     artifacts: "./artifacts",
@@ -104,11 +102,6 @@ const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.6",
     settings: {
-      metadata: {
-        // Not including the metadata hash
-        // https://github.com/paulrberg/hardhat-template/issues/31
-        bytecodeHash: "none",
-      },
       // Disable the optimizer when debugging
       // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
