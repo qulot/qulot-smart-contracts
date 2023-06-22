@@ -80,7 +80,11 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
         (curr, rewardRule) => {
           curr.matchNumbers.push(rewardRule.matchNumber);
           curr.rewardUnits.push(rewardRule.rewardUnit);
-          curr.rewardValues.push(parseUnits(rewardRule.rewardValue.toString(), tokenDecimals));
+          let rewardValue = BigNumber.from(rewardRule.rewardValue);
+          if (rewardRule.rewardUnit === 1) {
+            rewardValue = parseUnits(rewardRule.rewardValue.toString(), tokenDecimals);
+          }
+          curr.rewardValues.push(rewardValue);
           return curr;
         },
         {

@@ -10,9 +10,11 @@ import "solidity-coverage";
 import "./tasks/deployChainLinkRandomNumberGenerator";
 import "./tasks/deployQulotAutomationTrigger";
 import "./tasks/deployQulotLottery";
+import "./tasks/deployQulotLuckyNumberGenerator";
 import "./tasks/initChainLinkRandomNumberGenerator";
 import "./tasks/initQulotAutomationTrigger";
 import "./tasks/initQulotLottery";
+import "./tasks/initQulotLuckyNumberGenerator";
 import { getEnvByNetwork } from "./utils/env";
 
 const dotenvConfigPath: string = process.env.DOTENV_CONFIG_PATH || "./.env";

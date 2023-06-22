@@ -8,12 +8,13 @@ import { VRFConsumerBaseV2 } from "@chainlink/contracts/src/v0.8/VRFConsumerBase
 import { VRFCoordinatorV2Interface } from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import { IRandomNumberGenerator } from "./interfaces/IRandomNumberGenerator.sol";
 
+string constant ERROR_ONLY_QULOT_CONTRACT = "ERROR_ONLY_QULOT_CONTRACT";
+string constant ERROR_INVALID_KEY_HASH = "ERROR_INVALID_KEY_HASH";
+string constant ERROR_REQUEST_NOT_FOUND = "ERROR_REQUEST_NOT_FOUND";
+string constant ERROR_RESULT_NOT_FOUND = "ERROR_RESULT_NOT_FOUND";
+
 contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGenerator, Ownable {
     using SafeERC20 for IERC20;
-    /* #region Constants */
-    /* #endregion */
-
-    /* #region Structs */
     struct RequestStatus {
         bool fulfilled; // whether the request has been successfully fulfilled
         bool exists; // whether a requestId exists
@@ -23,16 +24,7 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
         uint32 maxValuePerItems;
         uint32[] results;
     }
-    /* #endregion */
 
-    /* #region Constants */
-    string private constant ERROR_ONLY_QULOT_CONTRACT = "ERROR_ONLY_QULOT_CONTRACT";
-    string private constant ERROR_INVALID_KEY_HASH = "ERROR_INVALID_KEY_HASH";
-    string private constant ERROR_REQUEST_NOT_FOUND = "ERROR_REQUEST_NOT_FOUND";
-    string private constant ERROR_RESULT_NOT_FOUND = "ERROR_RESULT_NOT_FOUND";
-    /* #endregion */
-
-    /* #region Events */
     event RequestRandomNumbers(
         uint256 roundId,
         uint32 numbersOfItems,
@@ -70,9 +62,6 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
     // function.
     uint32 private callbackGasLimit = 100000;
 
-    /* #endregion */
-
-    /* #region Constructor */
     /**
      * @notice Constructor
      * @dev ChainLinkRandomNumberGenerator must be deployed before the lottery.
@@ -84,9 +73,6 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
         COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
     }
 
-    /* #endregion */
-
-    /* #region Methods */
     /**
      * @param _roundId Request id combine lotteryProductId and lotteryroundId
      * @param _numbersOfItems Number of items
@@ -201,5 +187,4 @@ contract ChainLinkRandomNumberGenerator is VRFConsumerBaseV2, IRandomNumberGener
     function setSubscriptionId(uint64 _subscriptionId) external onlyOwner {
         subscriptionId = _subscriptionId;
     }
-    /* #endregion */
 }

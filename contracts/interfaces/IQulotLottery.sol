@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 import { RewardUnit } from "../lib/QulotLotteryEnums.sol";
-import { Lottery, Round, Ticket } from "../lib/QulotLotteryStructs.sol";
+import { Lottery, Round, Ticket, OrderTicket } from "../lib/QulotLotteryStructs.sol";
 
 interface IQulotLottery {
     /**
@@ -40,21 +40,11 @@ interface IQulotLottery {
 
     /**
      *
-     * @notice Buy tickets for the current round
-     * @param _roundId Rround id
-     * @param _tickets array of ticket
-     * @dev Callable by users
-     */
-    function buyTickets(uint256 _roundId, uint32[][] calldata _tickets) external;
-
-    /**
-     *
      * @notice Buy tickets for the multi rounds
-     * @param _roundIds Rround id
-     * @param _tickets array of ticket
+     * @param _ordersTicket Rround id
      * @dev Callable by users
      */
-    function buyTicketsMultiRounds(uint256[] calldata _roundIds, uint32[][] calldata _tickets) external;
+    function buyTickets(OrderTicket[] calldata _ordersTicket) external;
 
     /**
      * @notice Claim a set of winning tickets for a lottery
@@ -118,21 +108,21 @@ interface IQulotLottery {
     /**
      * @notice Return a length of ticket ids by user address
      */
-    function getTicketIdsByUserLength(address _user) external view returns (uint256);
+    function getTicketsByUserLength(address _user) external view returns (uint256);
 
     /**
-     * @notice Return a list of ticket ids by user address
+     * @notice Return a list of ticket by user address
      * @param _user: user address
      * @param _cursor: cursor to start where to retrieve the tickets
      * @param _size: the number of tickets to retrieve
      * @param _asc: get list order by ascending
      */
-    function getTicketIdsByUser(
+    function getTicketsByUser(
         address _user,
         uint256 _cursor,
         uint256 _size,
         bool _asc
-    ) external view returns (uint256[] memory ticketIds, uint256 cursor);
+    ) external view returns (Ticket[] memory userTickets, uint256 cursor);
 
     /**
      * @notice Return ticket by id

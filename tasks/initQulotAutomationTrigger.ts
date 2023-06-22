@@ -34,22 +34,22 @@ function getJobCronSpec(periodDays: number[], periodHourOfDays: number, jobType:
       case JobType.TriggerCloseLottery:
         return cronTime.everyDayAt(periodHourOfDays, 0);
       case JobType.TriggerDrawLottery:
-        return cronTime.everyDayAt(periodHourOfDays, 2);
+        return cronTime.everyDayAt(periodHourOfDays, 5);
       case JobType.TriggerRewardLottery:
-        return cronTime.everyDayAt(periodHourOfDays, 4);
+        return cronTime.everyDayAt(periodHourOfDays, 10);
       case JobType.TriggerOpenLottery:
-        return cronTime.everyDayAt(periodHourOfDays, 8);
+        return cronTime.everyDayAt(periodHourOfDays, 15);
     }
   }
   switch (jobType) {
     case JobType.TriggerCloseLottery:
       return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 0);
     case JobType.TriggerDrawLottery:
-      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 2);
+      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 5);
     case JobType.TriggerRewardLottery:
-      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 4);
+      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 10);
     case JobType.TriggerOpenLottery:
-      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 8);
+      return cronTime.onSpecificDaysAt(periodDays, periodHourOfDays, 15);
   }
 }
 

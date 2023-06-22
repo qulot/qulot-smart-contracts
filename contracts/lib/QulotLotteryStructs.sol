@@ -37,6 +37,7 @@ struct Rule {
 }
 
 struct Ticket {
+    uint256 ticketId;
     uint32[] numbers;
     address owner;
     uint256 roundId;
@@ -44,4 +45,15 @@ struct Ticket {
     uint winRewardRule;
     uint256 winAmount;
     bool clamStatus;
+}
+
+struct OrderTicket {
+    uint256 roundId;
+    uint32[][] tickets;
+}
+
+struct OrderTicketResult {
+    uint256 roundId;
+    uint256[] ticketIds;
+    uint256 orderAmount;
 }

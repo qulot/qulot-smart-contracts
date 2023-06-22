@@ -16,3 +16,15 @@ export function getEnvByNetwork(key: string, network: string, defaultValue?: str
   const envKey = snakeCase(combineKey).toUpperCase();
   return process.env[envKey] || defaultValue;
 }
+
+/**
+ * @example
+ * getEnv("ApiKey", "your-default-api-key")
+ * // returns process.env[ApiKey]
+ * @param key environment key
+ * @param defaultValue default value if not found
+ * @returns
+ */
+export function getEnv(key: string, defaultValue?: string) {
+  return process.env[key] || defaultValue;
+}

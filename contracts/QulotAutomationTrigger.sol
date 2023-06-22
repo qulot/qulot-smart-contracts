@@ -12,6 +12,13 @@ import { String } from "./utils/StringUtils.sol";
 import { JobType, JobStatus } from "./lib/QulotAutomationTriggerEnums.sol";
 import { TriggerJob } from "./lib/QulotAutomationTriggerStructs.sol";
 
+string constant ERROR_ONLY_OPERATOR = "ERROR_ONLY_OPERATOR";
+string constant ERROR_INVALID_ZERO_ADDRESS = "ERROR_INVALID_ZERO_ADDRESS";
+string constant ERROR_INVALID_JOB_ID = "ERROR_INVALID_JOB_ID";
+string constant ERROR_INVALID_LOTTERY_ID = "ERROR_INVALID_LOTTERY_ID";
+string constant ERROR_INVALID_JOB_CRON_SPEC = "ERROR_INVALID_JOB_CRON_SPEC";
+string constant ERROR_TRIGGER_JOB_ALREADY_EXISTS = "ERROR_TRIGGER_JOB_ALREADY_EXISTS";
+
 contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatibleInterface, Ownable {
     using Counters for Counters.Counter;
     using Cron for Spec;
@@ -21,13 +28,6 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
     error TickDoesntMatchSpec();
     event NewTriggerJob(string jobId, string lotteryId, JobType jobType, string cronSpec);
     event PerformTriggerJob(string jobId, uint256 timestamp, JobStatus status);
-
-    string private constant ERROR_ONLY_OPERATOR = "ERROR_ONLY_OPERATOR";
-    string private constant ERROR_INVALID_ZERO_ADDRESS = "ERROR_INVALID_ZERO_ADDRESS";
-    string private constant ERROR_INVALID_JOB_ID = "ERROR_INVALID_JOB_ID";
-    string private constant ERROR_INVALID_LOTTERY_ID = "ERROR_INVALID_LOTTERY_ID";
-    string private constant ERROR_INVALID_JOB_CRON_SPEC = "ERROR_INVALID_JOB_CRON_SPEC";
-    string private constant ERROR_TRIGGER_JOB_ALREADY_EXISTS = "ERROR_TRIGGER_JOB_ALREADY_EXISTS";
 
     IQulotLottery public qulotLottery;
     // The lottery scheduler account used to run regular operations.
@@ -93,6 +93,7 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
                 return (true, abi.encode(id));
             }
         }
+        return (false, bytes(""));
     }
 
     /**
