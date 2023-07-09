@@ -10,18 +10,16 @@
     "periodHourOfDays": 2,
     "maxNumberTicketsPerBuy": 100,
     "pricePerTicket": 1,
-    "treasuryFeePercent": 10,
-    "amountInjectNextRoundPercent": 0,
+    "treasuryFeePercent": 5,
+    "amountInjectNextRoundPercent": 5,
     "discountPercent": 10,
     "rewardRules": [
       {
         "matchNumber": 3,
-        "rewardUnit": 0,
         "rewardValue": 60
       },
       {
         "matchNumber": 2,
-        "rewardUnit": 0,
         "rewardValue": 40
       }
     ]

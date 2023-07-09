@@ -1,4 +1,3 @@
-import { BigNumber } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import { task } from "hardhat/config";
 import type { TaskArguments } from "hardhat/types";
@@ -76,38 +75,10 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
         } signer=${operator.address}`,
       );
 
-      const rewardRules = lottery.rewardRules.reduce(
-        (curr, rewardRule) => {
-          curr.matchNumbers.push(rewardRule.matchNumber);
-          curr.rewardUnits.push(rewardRule.rewardUnit);
-          let rewardValue = BigNumber.from(rewardRule.rewardValue);
-          if (rewardRule.rewardUnit === 1) {
-            rewardValue = parseUnits(rewardRule.rewardValue.toString(), tokenDecimals);
-          }
-          curr.rewardValues.push(rewardValue);
-          return curr;
-        },
-        {
-          matchNumbers: [],
-          rewardUnits: [],
-          rewardValues: [],
-        } as {
-          matchNumbers: number[];
-          rewardUnits: number[];
-          rewardValues: BigNumber[];
-        },
-      );
-
-      const addRewardRulesTx = await qulotLottery.addRewardRules(
-        lottery.id,
-        rewardRules.matchNumbers,
-        rewardRules.rewardUnits,
-        rewardRules.rewardValues,
-        {
-          gasLimit: 500000,
-          gasPrice: gasPrice.mul(2),
-        },
-      );
+      const addRewardRulesTx = await qulotLottery.addRewardRules(lottery.id, lottery.rewardRules, {
+        gasLimit: 500000,
+        gasPrice: gasPrice.mul(2),
+      });
       console.log(
         `[${new Date().toISOString()}] network=${network.name} message='Add rules #${inspect(addRewardRulesTx)}' hash=${
           addRewardRulesTx?.hash

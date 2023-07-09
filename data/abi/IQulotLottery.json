@@ -87,19 +87,21 @@
         "type": "string"
       },
       {
-        "internalType": "uint32[]",
-        "name": "_matchNumbers",
-        "type": "uint32[]"
-      },
-      {
-        "internalType": "enum RewardUnit[]",
-        "name": "_rewardUnits",
-        "type": "uint8[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "_rewardValues",
-        "type": "uint256[]"
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "matchNumber",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardValue",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Rule[]",
+        "name": "_rules",
+        "type": "tuple[]"
       }
     ],
     "name": "addRewardRules",
@@ -278,6 +280,11 @@
       {
         "components": [
           {
+            "internalType": "string",
+            "name": "lotteryId",
+            "type": "string"
+          },
+          {
             "internalType": "uint32[]",
             "name": "winningNumbers",
             "type": "uint32[]"
@@ -387,7 +394,7 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct Ticket",
+        "internalType": "struct TicketResult",
         "name": "ticket",
         "type": "tuple"
       }
@@ -463,7 +470,7 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct Ticket[]",
+        "internalType": "struct TicketResult[]",
         "name": "userTickets",
         "type": "tuple[]"
       },

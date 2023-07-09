@@ -42,6 +42,11 @@
         "components": [
           {
             "internalType": "uint256",
+            "name": "orderId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
             "name": "roundId",
             "type": "uint256"
           },
@@ -53,6 +58,11 @@
           {
             "internalType": "uint256",
             "name": "orderAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
             "type": "uint256"
           }
         ],
@@ -175,22 +185,22 @@
         "type": "string"
       },
       {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "matchNumber",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardValue",
+            "type": "uint256"
+          }
+        ],
         "indexed": false,
-        "internalType": "uint32",
-        "name": "matchNumber",
-        "type": "uint32"
-      },
-      {
-        "indexed": false,
-        "internalType": "enum RewardUnit",
-        "name": "rewardUnit",
-        "type": "uint8"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "rewardValue",
-        "type": "uint256"
+        "internalType": "struct Rule",
+        "name": "rule",
+        "type": "tuple"
       }
     ],
     "name": "NewRewardRule",
@@ -459,19 +469,21 @@
         "type": "string"
       },
       {
-        "internalType": "uint32[]",
-        "name": "_matchNumbers",
-        "type": "uint32[]"
-      },
-      {
-        "internalType": "enum RewardUnit[]",
-        "name": "_rewardUnits",
-        "type": "uint8[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "_rewardValues",
-        "type": "uint256[]"
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "matchNumber",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardValue",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Rule[]",
+        "name": "_rules",
+        "type": "tuple[]"
       }
     ],
     "name": "addRewardRules",
@@ -688,6 +700,11 @@
       {
         "components": [
           {
+            "internalType": "string",
+            "name": "lotteryId",
+            "type": "string"
+          },
+          {
             "internalType": "uint32[]",
             "name": "winningNumbers",
             "type": "uint32[]"
@@ -797,8 +814,8 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct Ticket",
-        "name": "",
+        "internalType": "struct TicketResult",
+        "name": "ticketResult",
         "type": "tuple"
       }
     ],
@@ -873,7 +890,7 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct Ticket[]",
+        "internalType": "struct TicketResult[]",
         "name": "userTickets",
         "type": "tuple[]"
       },
@@ -927,6 +944,94 @@
     "inputs": [
       {
         "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "name": "lotteries",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "verboseName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "picture",
+        "type": "string"
+      },
+      {
+        "internalType": "uint32",
+        "name": "numberOfItems",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "minValuePerItem",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "maxValuePerItem",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "periodHourOfDays",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "maxNumberTicketsPerBuy",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pricePerTicket",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "treasuryFeePercent",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "amountInjectNextRoundPercent",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "discountPercent",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "lotteryIds",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
         "name": "_lotteryId",
         "type": "string"
       }
@@ -944,6 +1049,45 @@
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "orderResults",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "orderId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "roundId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "orderAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1016,6 +1160,98 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "roundIds",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "roundRewardsBreakdown",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "rounds",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "lotteryId",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "endTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "openTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalTickets",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "firstRoundId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum RoundStatus",
+        "name": "status",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "string",
         "name": "",
         "type": "string"
@@ -1029,14 +1265,9 @@
     "name": "rulesPerLotteryId",
     "outputs": [
       {
-        "internalType": "uint32",
+        "internalType": "uint256",
         "name": "matchNumber",
-        "type": "uint32"
-      },
-      {
-        "internalType": "enum RewardUnit",
-        "name": "rewardUnit",
-        "type": "uint8"
+        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -1097,6 +1328,117 @@
     "name": "setTriggerAddress",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "ticketIds",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "tickets",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "ticketId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "roundId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "winStatus",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "winRewardRule",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "clamStatus",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "ticketsPerRoundId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "ticketsPerUserId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {

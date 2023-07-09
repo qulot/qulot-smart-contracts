@@ -7,8 +7,3 @@ enum RoundStatus {
     Close,
     Reward
 }
-
-enum RewardUnit {
-    Percent,
-    Fixed
-}

@@ -86,6 +86,8 @@ task("init:QulotAutomationTrigger", "First init data for QulotAutomationTrigger 
 
     const triggerJobTypeKeys = Object.keys(JobType).filter((v) => isNaN(Number(v)));
 
+    const existsJobIds = await qulotAutomationTrigger.getJobIds();
+
     for (const lotteryId of lotteryIds) {
       const lottery = await qulotLottery.getLottery(lotteryId);
       console.log(`Add trigger jobs for lottery ${inspect(lottery)}`);
@@ -97,6 +99,11 @@ task("init:QulotAutomationTrigger", "First init data for QulotAutomationTrigger 
         const triggerJobType = JobType[jobTypeKey as JobTypeKeys];
         const triggerJobId = getJobId(lotteryId, triggerJobType);
         const triggerJobCron = getJobCronSpec(periodDays, periodHourOfDays, triggerJobType);
+
+        if (existsJobIds.includes(triggerJobId)) {
+          console.warn(`Add trigger job ${triggerJobId} is exists, skip!`);
+          continue;
+        }
 
         console.log(
           `Add trigger job ${triggerJobId}, params: ${inspect({

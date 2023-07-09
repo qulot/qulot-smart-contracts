@@ -73,7 +73,18 @@ describe("contracts/QulotLottery", function () {
     await (await qulotLottery.addLottery("liteq", { ...lotteryLiteQ })).wait();
 
     // Add reward rules for liteq
-    await (await qulotLottery.addRewardRules("liteq", ["3", "2"], ["0", "0"], ["70", "30"])).wait();
+    await (
+      await qulotLottery.addRewardRules("liteq", [
+        {
+          matchNumber: 3,
+          rewardValue: 70,
+        },
+        {
+          matchNumber: 2,
+          rewardValue: 30,
+        },
+      ])
+    ).wait();
 
     return qulotLottery;
   }
@@ -238,9 +249,7 @@ describe("contracts/QulotLottery", function () {
         const { qulotLottery, operator } = await loadFixture(deployQulotLotteryFixture);
 
         // Test invalid lottery id
-        await expect(
-          qulotLottery.connect(operator).addRewardRules("", ["2"], ["0", "0"], ["40", "50"]),
-        ).to.revertedWith("ERROR_INVALID_RULES");
+        await expect(qulotLottery.connect(operator).addRewardRules("liteq", [])).to.revertedWith("ERROR_INVALID_RULES");
       });
     });
 
@@ -252,7 +261,12 @@ describe("contracts/QulotLottery", function () {
 
         // Register new lottery again, Expect error lottery already exists
         await expect(
-          qulotLottery.connect(operator).addRewardRules("liteq", ["1", "2"], ["0", "0"], ["40", "50"]),
+          qulotLottery.connect(operator).addRewardRules("liteq", [
+            {
+              matchNumber: 3,
+              rewardValue: 30,
+            },
+          ]),
         ).to.revertedWith("ERROR_ONLY_OPERATOR");
       });
     });
@@ -260,15 +274,22 @@ describe("contracts/QulotLottery", function () {
     describe("Data", function () {
       it("Will match all if adding new rules is successful", async function () {
         const { qulotLottery, operator } = await loadFixture(deployQulotLotteryFixture);
-        await qulotLottery.connect(operator).addRewardRules("liteq", ["1", "2"], ["0", "0"], ["40", "50"]);
-        const ruleMatch1 = await qulotLottery.rulesPerLotteryId("liteq", 0);
-        expect(ruleMatch1.matchNumber).to.equal(1);
-        expect(ruleMatch1.rewardUnit).to.equal(0);
+        await qulotLottery.connect(operator).addRewardRules("liteq", [
+          {
+            matchNumber: 4,
+            rewardValue: 40,
+          },
+          {
+            matchNumber: 3,
+            rewardValue: 30,
+          },
+        ]);
+        const ruleMatch1 = await qulotLottery.rulesPerLotteryId("liteq", 4);
+        expect(ruleMatch1.matchNumber).to.equal(4);
         expect(ruleMatch1.rewardValue).to.equal("40");
-        const ruleMatch2 = await qulotLottery.rulesPerLotteryId("liteq", 1);
-        expect(ruleMatch2.matchNumber).to.equal(2);
-        expect(ruleMatch2.rewardUnit).to.equal(0);
-        expect(ruleMatch2.rewardValue).to.equal("50");
+        const ruleMatch2 = await qulotLottery.rulesPerLotteryId("liteq", 3);
+        expect(ruleMatch2.matchNumber).to.equal(3);
+        expect(ruleMatch2.rewardValue).to.equal("30");
       });
     });
 
@@ -278,7 +299,16 @@ describe("contracts/QulotLottery", function () {
 
         // Register new lottery again, Expect error lottery already exists
         await expect(
-          qulotLottery.connect(operator).addRewardRules("liteq", ["1", "2"], ["0", "0"], ["40", "50"]),
+          qulotLottery.connect(operator).addRewardRules("liteq", [
+            {
+              matchNumber: 4,
+              rewardValue: 40,
+            },
+            {
+              matchNumber: 3,
+              rewardValue: 30,
+            },
+          ]),
         ).to.emit(qulotLottery, "NewRewardRule");
       });
     });
@@ -1065,6 +1095,7 @@ describe("contracts/QulotLottery", function () {
       expect(userTickets1[0].ticketId).to.equal(BigNumber.from("3"));
       expect(userTickets1[1].ticketId).to.equal(BigNumber.from("4"));
     });
+
     it("Get descending ok", async function () {
       const fixture = await loadFixture(deployQulotLotteryFixture);
       let qulotLottery = fixture.qulotLottery;

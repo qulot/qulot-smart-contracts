@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { RewardUnit } from "../lib/QulotLotteryEnums.sol";
-import { Lottery, Round, Ticket, OrderTicket } from "../lib/QulotLotteryStructs.sol";
+import { Lottery, Round, Rule, TicketResult, OrderTicket } from "../lib/QulotLotteryStructs.sol";
 
 interface IQulotLottery {
     /**
@@ -26,17 +25,9 @@ interface IQulotLottery {
     /**
      * @notice Add more rule reward for lottery payout. Only call when deploying smart contact for the first time
      * @param _lotteryId Lottery id
-     * @param _matchNumbers Number match
-     * @param _rewardUnits Reward unit
-     * @param _rewardValues Reward value per unit
-     * @dev Callable by operator
+     * @param _rules Rule list of lottery
      */
-    function addRewardRules(
-        string calldata _lotteryId,
-        uint32[] calldata _matchNumbers,
-        RewardUnit[] calldata _rewardUnits,
-        uint256[] calldata _rewardValues
-    ) external;
+    function addRewardRules(string calldata _lotteryId, Rule[] calldata _rules) external;
 
     /**
      *
@@ -106,6 +97,11 @@ interface IQulotLottery {
     function getRound(uint256 _roundId) external view returns (Round memory round);
 
     /**
+     * @notice Return a length of ticket ids
+     */
+    function getTicketsLength() external view returns (uint256);
+
+    /**
      * @notice Return a length of ticket ids by user address
      */
     function getTicketsByUserLength(address _user) external view returns (uint256);
@@ -122,11 +118,11 @@ interface IQulotLottery {
         uint256 _cursor,
         uint256 _size,
         bool _asc
-    ) external view returns (Ticket[] memory userTickets, uint256 cursor);
+    ) external view returns (TicketResult[] memory userTickets, uint256 cursor);
 
     /**
      * @notice Return ticket by id
      * @param _ticketId Id of round
      */
-    function getTicket(uint256 _ticketId) external view returns (Ticket memory ticket);
+    function getTicket(uint256 _ticketId) external view returns (TicketResult memory ticket);
 }

@@ -1,6 +1,5 @@
 export interface RewardRule {
   matchNumber: number;
-  rewardUnit: number;
   rewardValue: number;
 }
 
