@@ -1,6 +1,7 @@
 import "@nomicfoundation/hardhat-toolbox";
 import { config as dotenvConfig } from "dotenv";
 import "hardhat-abi-exporter";
+import "hardhat-contract-sizer";
 import "hardhat-gas-reporter";
 import type { HardhatUserConfig } from "hardhat/config";
 import type { NetworkUserConfig } from "hardhat/types";
@@ -33,6 +34,7 @@ if (!infuraApiKey) {
 
 const etherScanApiKey = process.env.ETHERSCAN_API_KEY || "";
 const polygonScanApiKey = process.env.POLYGONSCAN_API_KEY || "";
+const bnbChainScanApiKey = process.env.BNBCHAIN_API_KEY || "";
 const reportGas = process.env.REPORT_GAS ? true : false;
 
 const chainIds = {
@@ -83,6 +85,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       sepolia: etherScanApiKey,
       polygonMumbai: polygonScanApiKey,
+      bsc: bnbChainScanApiKey,
     },
   },
   networks: {
@@ -91,9 +94,11 @@ const config: HardhatUserConfig = {
         mnemonic,
       },
       chainId: chainIds.hardhat,
+      gas: 12000000,
     },
     sepolia: getChainConfig("sepolia"),
     "polygon-mumbai": getChainConfig("polygon-mumbai"),
+    bsc: getChainConfig("bsc"),
   },
   paths: {
     artifacts: "./artifacts",
@@ -108,7 +113,7 @@ const config: HardhatUserConfig = {
       // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 1000,
       },
     },
   },
@@ -117,9 +122,16 @@ const config: HardhatUserConfig = {
     runOnCompile: true,
     clear: true,
     flat: true,
-    only: ["QulotLottery"],
+    only: [":QulotLottery$"],
     spacing: 2,
     format: "json",
+  },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    strict: true,
+    only: [":QulotLottery$"],
   },
   typechain: {
     outDir: "types",

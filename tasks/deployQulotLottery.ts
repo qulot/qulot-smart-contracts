@@ -18,8 +18,7 @@ task("deploy:QulotLottery", "Deploy the QulotLottery contract").setAction(async 
     const QulotLottery = await ethers.getContractFactory("QulotLottery");
     const qulotLottery = await QulotLottery.deploy(tokenAddress);
     await qulotLottery.deployTransaction.wait(WAIT_CONFIRMATION_BLOCKS);
-    await qulotLottery.setOperatorAddress(operator.address);
-    await qulotLottery.setTreasuryAddress(treasury.address);
+    await qulotLottery.setOperatorTreasuryAddress(operator.address, treasury.address);
     console.log(`QulotLottery deployed to: ${qulotLottery.address}`);
 
     // Verify Qulot lottery contract

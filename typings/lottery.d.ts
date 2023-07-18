@@ -13,6 +13,7 @@ export interface Lottery {
   periodDays: number[];
   periodHourOfDays: number;
   maxNumberTicketsPerBuy: number;
+  maxNumberTicketsPerRound: number;
   pricePerTicket: number;
   treasuryFeePercent: number;
   amountInjectNextRoundPercent: number;

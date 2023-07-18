@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { Lottery, Round, Rule, TicketResult, OrderTicket } from "../lib/QulotLotteryStructs.sol";
+import { Lottery, RoundView, Rule, TicketView, OrderTicket } from "../lib/QulotLotteryStructs.sol";
 
 interface IQulotLottery {
     /**
@@ -17,10 +17,19 @@ interface IQulotLottery {
      *
      * @notice Add new lottery. Only call when deploying smart contact for the first time
      * @param _lotteryId lottery id
-     * @param _lottery lottery id
+     * @param _lottery lottery data
      * @dev Callable by operator
      */
     function addLottery(string calldata _lotteryId, Lottery calldata _lottery) external;
+
+    /**
+     *
+     * @notice Update exists lottery
+     * @param _lotteryId lottery id
+     * @param _lottery lottery data
+     * @dev Callable by operator
+     */
+    function updateLottery(string calldata _lotteryId, Lottery calldata _lottery) external;
 
     /**
      * @notice Add more rule reward for lottery payout. Only call when deploying smart contact for the first time
@@ -94,7 +103,7 @@ interface IQulotLottery {
      * @notice Return round by id
      * @param _roundId Id of round
      */
-    function getRound(uint256 _roundId) external view returns (Round memory round);
+    function getRound(uint256 _roundId) external view returns (RoundView memory round);
 
     /**
      * @notice Return a length of ticket ids
@@ -107,22 +116,8 @@ interface IQulotLottery {
     function getTicketsByUserLength(address _user) external view returns (uint256);
 
     /**
-     * @notice Return a list of ticket by user address
-     * @param _user: user address
-     * @param _cursor: cursor to start where to retrieve the tickets
-     * @param _size: the number of tickets to retrieve
-     * @param _asc: get list order by ascending
-     */
-    function getTicketsByUser(
-        address _user,
-        uint256 _cursor,
-        uint256 _size,
-        bool _asc
-    ) external view returns (TicketResult[] memory userTickets, uint256 cursor);
-
-    /**
      * @notice Return ticket by id
      * @param _ticketId Id of round
      */
-    function getTicket(uint256 _ticketId) external view returns (TicketResult memory ticket);
+    function getTicket(uint256 _ticketId) external view returns (TicketView memory ticket);
 }

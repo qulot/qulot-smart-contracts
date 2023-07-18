@@ -56,6 +56,7 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
           minValuePerItem: lottery.minValuePerItem,
           maxValuePerItem: lottery.maxValuePerItem,
           maxNumberTicketsPerBuy: lottery.maxNumberTicketsPerBuy,
+          maxNumberTicketsPerRound: lottery.maxNumberTicketsPerRound,
           amountInjectNextRoundPercent: lottery.amountInjectNextRoundPercent,
           periodDays: lottery.periodDays,
           periodHourOfDays: lottery.periodHourOfDays,

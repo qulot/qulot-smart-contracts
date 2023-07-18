@@ -18,6 +18,7 @@ describe("contracts/QulotLottery", function () {
     periodDays: ["1", "2", "3", "4", "5", "6"],
     periodHourOfDays: "24",
     maxNumberTicketsPerBuy: "4",
+    maxNumberTicketsPerRound: "10",
     pricePerTicket: parseEther("1"),
     treasuryFeePercent: "10",
     amountInjectNextRoundPercent: "10",
@@ -42,8 +43,7 @@ describe("contracts/QulotLottery", function () {
     const qulotLottery = await (await ethers.getContractFactory("QulotLottery")).deploy(token.address);
     console.log(`QulotLottery deployed: ${qulotLottery.address}`);
     await qulotLottery.setRandomGenerator(randomNumberGenerator.address);
-    await qulotLottery.setOperatorAddress(operator.address);
-    await qulotLottery.setTreasuryAddress(treasury.address);
+    await qulotLottery.setOperatorTreasuryAddress(operator.address, treasury.address);
     await qulotLottery.setTriggerAddress(trigger.address);
     await randomNumberGenerator.setQulotLottery(qulotLottery.address);
 
@@ -85,6 +85,9 @@ describe("contracts/QulotLottery", function () {
         },
       ])
     ).wait();
+
+    // Set bulkTicketsDiscountApply
+    await (await qulotLottery.setBulkTicketsDiscountApply(1)).wait();
 
     return qulotLottery;
   }
@@ -141,6 +144,14 @@ describe("contracts/QulotLottery", function () {
           }),
         ).to.revertedWith("ERROR_INVALID_LOTTERY_NUMBER_OF_ITEMS");
 
+        // Test invalid lottery number of items less than 6
+        await expect(
+          qulotLottery.connect(operator).addLottery("liteq", {
+            ...lotteryLiteQ,
+            numberOfItems: "7",
+          }),
+        ).to.revertedWith("ERROR_INVALID_LOTTERY_NUMBER_OF_ITEMS");
+
         // Test invalid lottery min value per item
         await expect(
           qulotLottery.connect(operator).addLottery("liteq", {
@@ -192,9 +203,9 @@ describe("contracts/QulotLottery", function () {
 
     describe("Modifiers", function () {
       it("Should fail if caller is not operator", async function () {
-        const { qulotLottery, operator, other } = await loadFixture(deployQulotLotteryFixture);
+        const { qulotLottery, operator, other, treasury } = await loadFixture(deployQulotLotteryFixture);
 
-        await qulotLottery.setOperatorAddress(other.address);
+        await qulotLottery.setOperatorTreasuryAddress(other.address, treasury.address);
 
         // Register new lottery again, Expect error lottery already exists
         await expect(qulotLottery.connect(operator).addLottery("liteq", { ...lotteryLiteQ })).to.revertedWith(
@@ -204,18 +215,6 @@ describe("contracts/QulotLottery", function () {
     });
 
     describe("Data", function () {
-      it("Should fail if lottery already exist", async function () {
-        const { qulotLottery, operator } = await loadFixture(deployQulotLotteryFixture);
-
-        // Register new lottery first
-        await qulotLottery.connect(operator).addLottery("liteq", { ...lotteryLiteQ });
-
-        // Register new lottery again, Expect error lottery already exists
-        await expect(qulotLottery.connect(operator).addLottery("liteq", { ...lotteryLiteQ })).to.revertedWith(
-          "ERROR_LOTTERY_ALREADY_EXISTS",
-        );
-      });
-
       it("Will match all if adding new lottery is successful", async function () {
         const { qulotLottery, operator } = await loadFixture(deployQulotLotteryFixture);
 
@@ -255,9 +254,9 @@ describe("contracts/QulotLottery", function () {
 
     describe("Modifiers", function () {
       it("Should fail if caller is not operator", async function () {
-        const { qulotLottery, operator, other } = await loadFixture(deployQulotLotteryFixture);
+        const { qulotLottery, operator, other, treasury } = await loadFixture(deployQulotLotteryFixture);
 
-        await qulotLottery.setOperatorAddress(other.address);
+        await qulotLottery.setOperatorTreasuryAddress(other.address, treasury.address);
 
         // Register new lottery again, Expect error lottery already exists
         await expect(
@@ -315,21 +314,10 @@ describe("contracts/QulotLottery", function () {
   });
 
   describe("open", function () {
-    describe("Validations", function () {
-      it("Should fail if invalid id", async function () {
-        const fixture = await loadFixture(deployQulotLotteryFixture);
-        const operator = fixture.operator;
-        let qulotLottery = fixture.qulotLottery;
-        // Register new lottery first
-        qulotLottery = await initLottery(qulotLottery, operator);
-        await expect(qulotLottery.connect(operator).open("")).to.revertedWith("ERROR_INVALID_LOTTERY_ID");
-      });
-    });
-
     describe("Modifiers", function () {
       it("Should fail if caller is not operator", async function () {
-        const { qulotLottery, operator, other } = await loadFixture(deployQulotLotteryFixture);
-        await qulotLottery.setOperatorAddress(other.address);
+        const { qulotLottery, operator, other, treasury } = await loadFixture(deployQulotLotteryFixture);
+        await qulotLottery.setOperatorTreasuryAddress(other.address, treasury.address);
         await expect(qulotLottery.connect(operator).open("liteq")).to.revertedWith("ERROR_ONLY_TRIGGER_OR_OPERATOR");
       });
     });
@@ -394,20 +382,10 @@ describe("contracts/QulotLottery", function () {
   });
 
   describe("close", function () {
-    describe("Validations", function () {
-      it("Should fail if invalid id", async function () {
-        const fixture = await loadFixture(deployQulotLotteryFixture);
-        let qulotLottery = fixture.qulotLottery;
-        // Register new lottery first
-        qulotLottery = await initLottery(qulotLottery, fixture.operator);
-        await expect(qulotLottery.connect(fixture.operator).close("")).to.revertedWith("ERROR_INVALID_LOTTERY_ID");
-      });
-    });
-
     describe("Modifiers", function () {
       it("Should fail if caller is not operator", async function () {
-        const { qulotLottery, operator, other } = await loadFixture(deployQulotLotteryFixture);
-        await qulotLottery.setOperatorAddress(other.address);
+        const { qulotLottery, operator, other, treasury } = await loadFixture(deployQulotLotteryFixture);
+        await qulotLottery.setOperatorTreasuryAddress(other.address, treasury.address);
         await expect(qulotLottery.connect(operator).close("liteq")).to.revertedWith("ERROR_ONLY_TRIGGER_OR_OPERATOR");
       });
     });
@@ -434,18 +412,6 @@ describe("contracts/QulotLottery", function () {
   });
 
   describe("draw", function () {
-    describe("Validations", function () {
-      it("Should fail if invalid id", async function () {
-        const fixture = await loadFixture(deployQulotLotteryFixture);
-        let qulotLottery = fixture.qulotLottery;
-        // Register new lottery first
-        qulotLottery = await initLottery(qulotLottery, fixture.operator);
-        qulotLottery = await openLottery(qulotLottery, fixture.operator);
-        await qulotLottery.close("liteq");
-        await expect(qulotLottery.connect(fixture.operator).draw("")).to.revertedWith("ERROR_INVALID_LOTTERY_ID");
-      });
-    });
-
     describe("Modifiers", function () {
       it("Should fail if caller is not operator", async function () {
         const fixture = await loadFixture(deployQulotLotteryFixture);
@@ -507,19 +473,6 @@ describe("contracts/QulotLottery", function () {
   });
 
   describe("reward", function () {
-    describe("Validations", function () {
-      it("Should fail if invalid id", async function () {
-        const fixture = await loadFixture(deployQulotLotteryFixture);
-        let qulotLottery = fixture.qulotLottery;
-        // Register new lottery first
-        qulotLottery = await initLottery(qulotLottery, fixture.operator);
-        await qulotLottery.open("liteq");
-        await qulotLottery.close("liteq");
-        await qulotLottery.draw("liteq");
-        await expect(qulotLottery.reward("")).to.revertedWith("ERROR_INVALID_LOTTERY_ID");
-      });
-    });
-
     describe("Modifiers", function () {
       it("Should fail if caller is not operator", async function () {
         const fixture = await loadFixture(deployQulotLotteryFixture);
@@ -797,6 +750,54 @@ describe("contracts/QulotLottery", function () {
           ]),
         ).to.revertedWith("ERROR_TICKETS_LIMIT");
       });
+
+      it("Should fail if tickets out of round limit ticket", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        // Register new lottery first
+        qulotLottery = await initLottery(qulotLottery, fixture.operator);
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
+        const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
+        await (
+          await qulotLottery.connect(fixture.lisa).buyTickets([
+            {
+              roundId: currentRoundId,
+              tickets: [
+                ["1", "3", "4"],
+                ["1", "3", "4"],
+                ["1", "3", "4"],
+                ["1", "3", "4"],
+              ],
+            },
+          ])
+        ).wait();
+        await (
+          await qulotLottery.connect(fixture.lisa).buyTickets([
+            {
+              roundId: currentRoundId,
+              tickets: [
+                ["1", "3", "4"],
+                ["1", "3", "4"],
+                ["1", "3", "4"],
+                ["1", "3", "4"],
+              ],
+            },
+          ])
+        ).wait();
+        await expect(
+          qulotLottery.connect(fixture.lisa).buyTickets([
+            {
+              roundId: currentRoundId,
+              tickets: [
+                ["1", "3", "4"],
+                ["1", "3", "4"],
+                ["1", "3", "4"],
+                ["1", "3", "4"],
+              ],
+            },
+          ]),
+        ).to.revertedWith("ERROR_TICKETS_LIMIT_PER_ROUND");
+      });
     });
 
     describe("Data", function () {
@@ -1053,136 +1054,6 @@ describe("contracts/QulotLottery", function () {
         // Check lisa claim
         await expect(qulotLottery.connect(fixture.lisa).claimTickets(["1"])).to.emit(qulotLottery, "TicketsClaim");
       });
-    });
-  });
-
-  describe("getTicketsByUser", function () {
-    it("Get ascending ok", async function () {
-      const fixture = await loadFixture(deployQulotLotteryFixture);
-      let qulotLottery = fixture.qulotLottery;
-      // Register new lottery first
-      qulotLottery = await initLottery(qulotLottery, fixture.operator);
-      qulotLottery = await openLottery(qulotLottery, fixture.operator);
-      const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
-      // Mock lisa by 3 tickets
-      await (
-        await qulotLottery.connect(fixture.lisa).buyTickets([
-          {
-            roundId: currentRoundId,
-            tickets: [
-              ["3", "5", "20"],
-              ["7", "19", "52"],
-              ["6", "1", "42"],
-              ["9", "16", "25"],
-            ],
-          },
-        ])
-      ).wait();
-
-      const { userTickets, cursor } = await qulotLottery.getTicketsByUser(fixture.lisa.address, 0, 2, true);
-      expect(userTickets.length).to.equal(2);
-      expect(cursor).to.equal(2);
-      expect(userTickets[0].ticketId).to.equal(BigNumber.from("1"));
-      expect(userTickets[1].ticketId).to.equal(BigNumber.from("2"));
-      const { userTickets: userTickets1, cursor: cursor1 } = await qulotLottery.getTicketsByUser(
-        fixture.lisa.address,
-        cursor,
-        2,
-        true,
-      );
-      expect(userTickets1.length).to.equal(2);
-      expect(cursor1).to.equal(4);
-      expect(userTickets1[0].ticketId).to.equal(BigNumber.from("3"));
-      expect(userTickets1[1].ticketId).to.equal(BigNumber.from("4"));
-    });
-
-    it("Get descending ok", async function () {
-      const fixture = await loadFixture(deployQulotLotteryFixture);
-      let qulotLottery = fixture.qulotLottery;
-      // Register new lottery first
-      qulotLottery = await initLottery(qulotLottery, fixture.operator);
-      qulotLottery = await openLottery(qulotLottery, fixture.operator);
-      const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
-      // Mock lisa by 3 tickets
-      await (
-        await qulotLottery.connect(fixture.lisa).buyTickets([
-          {
-            roundId: currentRoundId,
-            tickets: [
-              ["3", "5", "20"],
-              ["7", "19", "52"],
-              ["6", "1", "42"],
-              ["9", "16", "25"],
-            ],
-          },
-        ])
-      ).wait();
-      await (
-        await qulotLottery.connect(fixture.lisa).buyTickets([
-          {
-            roundId: currentRoundId,
-            tickets: [["3", "2", "1"]],
-          },
-        ])
-      ).wait();
-      const ticketsLength = await qulotLottery.getTicketsByUserLength(fixture.lisa.address);
-      const { userTickets, cursor } = await qulotLottery.getTicketsByUser(
-        fixture.lisa.address,
-        ticketsLength,
-        2,
-        false,
-      );
-      expect(userTickets.length).to.equal(2);
-      expect(cursor).to.equal(3);
-      expect(userTickets[0].ticketId).to.equal(BigNumber.from("5"));
-      expect(userTickets[1].ticketId).to.equal(BigNumber.from("4"));
-      const { userTickets: userTickets1, cursor: cursor1 } = await qulotLottery.getTicketsByUser(
-        fixture.lisa.address,
-        cursor,
-        2,
-        false,
-      );
-      expect(userTickets1.length).to.equal(2);
-      expect(cursor1).to.equal(1);
-      expect(userTickets1[0].ticketId).to.equal(BigNumber.from("3"));
-      expect(userTickets1[1].ticketId).to.equal(BigNumber.from("2"));
-      const { userTickets: userTickets2, cursor: cursor2 } = await qulotLottery.getTicketsByUser(
-        fixture.lisa.address,
-        cursor1,
-        2,
-        false,
-      );
-      expect(userTickets2.length).to.equal(1);
-      expect(cursor2).to.equal(0);
-      expect(userTickets2[0].ticketId).to.equal(BigNumber.from("1"));
-    });
-
-    it("Get 2 tickets descending but have 1 ok", async function () {
-      const fixture = await loadFixture(deployQulotLotteryFixture);
-      let qulotLottery = fixture.qulotLottery;
-      // Register new lottery first
-      qulotLottery = await initLottery(qulotLottery, fixture.operator);
-      qulotLottery = await openLottery(qulotLottery, fixture.operator);
-      const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
-      // Mock lisa by 3 tickets
-      await (
-        await await qulotLottery.connect(fixture.lisa).buyTickets([
-          {
-            roundId: currentRoundId,
-            tickets: [["3", "5", "20"]],
-          },
-        ])
-      ).wait();
-      const ticketsLength = await qulotLottery.getTicketsByUserLength(fixture.lisa.address);
-      const { userTickets, cursor } = await qulotLottery.getTicketsByUser(
-        fixture.lisa.address,
-        ticketsLength,
-        2,
-        false,
-      );
-      expect(userTickets.length).to.equal(1);
-      expect(cursor).to.equal(0);
-      expect(userTickets[0].ticketId).to.equal(BigNumber.from("1"));
     });
   });
 });

@@ -18,9 +18,22 @@ struct Lottery {
     uint32 treasuryFeePercent;
     uint32 amountInjectNextRoundPercent;
     uint32 discountPercent;
+    uint256 maxNumberTicketsPerRound;
 }
 
 struct Round {
+    string lotteryId;
+    uint32[] winningNumbers;
+    uint256 endTime;
+    uint256 openTime;
+    uint256 totalAmount;
+    uint256 totalTickets;
+    uint256 firstRoundId;
+    RoundStatus status;
+    mapping(uint => uint32) winningNumberPerIndexed;
+}
+
+struct RoundView {
     string lotteryId;
     uint32[] winningNumbers;
     uint256 endTime;
@@ -47,7 +60,7 @@ struct Ticket {
     mapping(uint32 => bool) contains;
 }
 
-struct TicketResult {
+struct TicketView {
     uint256 ticketId;
     uint32[] numbers;
     address owner;

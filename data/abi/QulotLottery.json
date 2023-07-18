@@ -33,6 +33,92 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "string",
+        "name": "lotteryId",
+        "type": "string"
+      },
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "verboseName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "picture",
+            "type": "string"
+          },
+          {
+            "internalType": "uint32",
+            "name": "numberOfItems",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minValuePerItem",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxValuePerItem",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "periodDays",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "periodHourOfDays",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxNumberTicketsPerBuy",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "pricePerTicket",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "treasuryFeePercent",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "amountInjectNextRoundPercent",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "discountPercent",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxNumberTicketsPerRound",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Lottery",
+        "name": "lottery",
+        "type": "tuple"
+      }
+    ],
+    "name": "ModifiedLottery",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "buyer",
@@ -73,6 +159,19 @@
       }
     ],
     "name": "MultiRoundsTicketsPurchase",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "automationTriggerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "NewAutomationTrigger",
     "type": "event"
   },
   {
@@ -145,6 +244,11 @@
             "internalType": "uint32",
             "name": "discountPercent",
             "type": "uint32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxNumberTicketsPerRound",
+            "type": "uint256"
           }
         ],
         "indexed": false,
@@ -449,6 +553,11 @@
             "internalType": "uint32",
             "name": "discountPercent",
             "type": "uint32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxNumberTicketsPerRound",
+            "type": "uint256"
           }
         ],
         "internalType": "struct Lottery",
@@ -511,6 +620,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "bulkTicketsDiscountApply",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "components": [
@@ -533,6 +655,30 @@
     "name": "buyTickets",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_lotteryId",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_numberTickets",
+        "type": "uint256"
+      }
+    ],
+    "name": "caculateTotalPriceForBulkTickets",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -664,6 +810,11 @@
             "internalType": "uint32",
             "name": "discountPercent",
             "type": "uint32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxNumberTicketsPerRound",
+            "type": "uint256"
           }
         ],
         "internalType": "struct Lottery",
@@ -740,8 +891,8 @@
             "type": "uint8"
           }
         ],
-        "internalType": "struct Round",
-        "name": "",
+        "internalType": "struct RoundView",
+        "name": "roundView",
         "type": "tuple"
       }
     ],
@@ -814,90 +965,9 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct TicketResult",
+        "internalType": "struct TicketView",
         "name": "ticketResult",
         "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_user",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_cursor",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_size",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "_asc",
-        "type": "bool"
-      }
-    ],
-    "name": "getTicketsByUser",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "ticketId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint32[]",
-            "name": "numbers",
-            "type": "uint32[]"
-          },
-          {
-            "internalType": "address",
-            "name": "owner",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "roundId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "winStatus",
-            "type": "bool"
-          },
-          {
-            "internalType": "uint256",
-            "name": "winRewardRule",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "winAmount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "clamStatus",
-            "type": "bool"
-          }
-        ],
-        "internalType": "struct TicketResult[]",
-        "name": "userTickets",
-        "type": "tuple[]"
-      },
-      {
-        "internalType": "uint256",
-        "name": "cursor",
-        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1017,6 +1087,11 @@
         "internalType": "uint32",
         "name": "discountPercent",
         "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxNumberTicketsPerRound",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1294,12 +1369,30 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "_numberOfTicket",
+        "type": "uint256"
+      }
+    ],
+    "name": "setBulkTicketsDiscountApply",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "_operatorAddress",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_treasuryAddress",
+        "type": "address"
       }
     ],
-    "name": "setOperatorAddress",
+    "name": "setOperatorTreasuryAddress",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1313,19 +1406,6 @@
       }
     ],
     "name": "setRandomGenerator",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_treasuryAddress",
-        "type": "address"
-      }
-    ],
-    "name": "setTreasuryAddress",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1504,6 +1584,91 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_lotteryId",
+        "type": "string"
+      },
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "verboseName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "picture",
+            "type": "string"
+          },
+          {
+            "internalType": "uint32",
+            "name": "numberOfItems",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minValuePerItem",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxValuePerItem",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "periodDays",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "periodHourOfDays",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxNumberTicketsPerBuy",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "pricePerTicket",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "treasuryFeePercent",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "amountInjectNextRoundPercent",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "discountPercent",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxNumberTicketsPerRound",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Lottery",
+        "name": "_lottery",
+        "type": "tuple"
+      }
+    ],
+    "name": "updateLottery",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]
