@@ -12,10 +12,10 @@ import { IQulotLottery } from "./interfaces/IQulotLottery.sol";
 import { IRandomNumberGenerator } from "./interfaces/IRandomNumberGenerator.sol";
 import { RoundStatus } from "./lib/QulotLotteryEnums.sol";
 import { String } from "./utils/StringUtils.sol";
+import { Subsets } from "./utils/Subsets.sol";
 import {
     Lottery,
     Round,
-    RoundView,
     Ticket,
     Rule,
     OrderTicket,
@@ -23,10 +23,13 @@ import {
     TicketView
 } from "./lib/QulotLotteryStructs.sol";
 
+import "hardhat/console.sol";
+
 contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     using SafeERC20 for IERC20;
     using Counters for Counters.Counter;
     using SafeMath for uint256;
+    using Subsets for Subsets.Subset;
 
     event MultiRoundsTicketsPurchase(address indexed buyer, OrderTicketResult[] ordersResult);
     event TicketsClaim(address indexed claimer, uint256 amount, uint256[] ticketIds);
@@ -50,6 +53,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     uint256[] public roundIds;
     mapping(uint256 => Round) public rounds;
     mapping(uint256 => mapping(uint => uint256)) public roundRewardsBreakdown;
+    mapping(uint256 => mapping(bytes32 => uint32)) public roundTicketsSubsetCouter;
 
     // Mapping ticketId to ticket info
     uint256[] public ticketIds;
@@ -123,145 +127,31 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     }
 
     function addRewardRules(string calldata _lotteryId, Rule[] calldata _rules) external override onlyOperator {
-        require(_rules.length > 0, "ERROR_INVALID_RULES");
-        for (uint i; i < _rules.length; i++) {
-            require(_rules[i].matchNumber > 0, "ERROR_INVALID_RULE_MATCH_NUMBER");
-            require(_rules[i].rewardValue > 0, "ERROR_INVALID_RULE_REWARD_VALUE");
-            rulesPerLotteryId[_lotteryId][_rules[i].matchNumber] = _rules[i];
-            emit NewRewardRule(_rules[i].matchNumber, _lotteryId, _rules[i]);
-        }
+        _addRewardRules(_lotteryId, _rules);
     }
 
     function buyTickets(OrderTicket[] calldata _ordersTicket) external override notContract nonReentrant {
-        // check list tickets is emptyidx
-        require(_ordersTicket.length != 0, "ERROR_TICKETS_EMPTY");
-        OrderTicketResult[] memory ordersResult = new OrderTicketResult[](_ordersTicket.length);
-        // calculate total price to pay to this contract
-        uint256 amountToTransfer;
-        OrderTicketResult memory orderTicketResult;
-        for (uint orderIdx; orderIdx < _ordersTicket.length; orderIdx++) {
-            orderTicketResult = _processOrder(_ordersTicket[orderIdx]);
-            amountToTransfer += orderTicketResult.orderAmount;
-            ordersResult[orderIdx] = orderTicketResult;
-        }
-        // transfer tokens to this contract
-        token.safeTransferFrom(address(msg.sender), address(this), amountToTransfer);
-        emit MultiRoundsTicketsPurchase(msg.sender, ordersResult);
+        _buyTickets(_ordersTicket);
     }
 
     function claimTickets(uint256[] calldata _ticketIds) external override notContract nonReentrant {
-        require(_ticketIds.length != 0, "ERROR_TICKETS_EMPTY");
-        // Initializes the rewardAmountToTransfer
-        uint256 rewardAmountToTransfer;
-        for (uint i; i < _ticketIds.length; i++) {
-            uint256 ticketId = _ticketIds[i];
-            require(tickets[ticketId].owner == msg.sender, "ERROR_ONLY_OWNER");
-            require(tickets[ticketId].winStatus, "ERROR_TICKET_NOT_WIN");
-            require(!tickets[ticketId].clamStatus, "ERROR_ONLY_CLAIM_PRIZE_ONCE");
-            tickets[ticketId].clamStatus = true;
-            rewardAmountToTransfer += roundRewardsBreakdown[tickets[ticketId].roundId][tickets[ticketId].winRewardRule];
-        }
-        // Transfer money to msg.sender
-        token.safeTransfer(msg.sender, rewardAmountToTransfer);
-        emit TicketsClaim(msg.sender, rewardAmountToTransfer, _ticketIds);
+        _claimTickets(_ticketIds);
     }
 
     function open(string calldata _lotteryId) external override onlyOperatorOrTrigger {
-        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
-        if (_isTrigger()) {
-            require(
-                ((currentRoundId == 0) || (rounds[currentRoundId].status == RoundStatus.Reward)),
-                "ERROR_NOT_TIME_OPEN_LOTTERY"
-            );
-        }
-        // Increment current round id of lottery to one
-        counterRoundId.increment();
-        uint256 nextRoundId = counterRoundId.current();
-        // Keep track lottery id and round id
-        require(nextRoundId > currentRoundIdPerLottery[_lotteryId], "ERROR_ROUND_ID_LESS_THAN_CURRENT");
-        currentRoundIdPerLottery[_lotteryId] = nextRoundId;
-        // Create new round
-        uint256 totalAmount = amountInjectNextRoundPerLottery[_lotteryId];
-        Round storage round = rounds[nextRoundId];
-        round.lotteryId = _lotteryId;
-        round.firstRoundId = currentRoundId;
-        round.winningNumbers = new uint32[](lotteries[_lotteryId].numberOfItems);
-        round.openTime = block.timestamp;
-        round.totalAmount = totalAmount;
-        round.status = RoundStatus.Open;
-
-        roundIds.push(nextRoundId);
-        // Reset amount injection for next round
-        amountInjectNextRoundPerLottery[_lotteryId] = 0;
-        // Emit round open
-        emit RoundOpen(nextRoundId, _lotteryId, totalAmount, block.timestamp, currentRoundId);
+        _open(_lotteryId);
     }
 
     function close(string calldata _lotteryId) external override onlyOperatorOrTrigger {
-        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
-        if (_isTrigger()) {
-            require(
-                (currentRoundId != 0) && rounds[currentRoundId].status == RoundStatus.Open,
-                "ERROR_NOT_TIME_CLOSE_LOTTERY"
-            );
-        }
-        rounds[currentRoundId].status = RoundStatus.Close;
-        // Request new random number
-        Lottery storage lottery = lotteries[_lotteryId];
-        randomGenerator.requestRandomNumbers(
-            currentRoundId,
-            lottery.numberOfItems,
-            lottery.minValuePerItem,
-            lottery.maxValuePerItem
-        );
-        // Emit round close
-        emit RoundClose(currentRoundId, rounds[currentRoundId].totalAmount, rounds[currentRoundId].totalTickets);
+        _close(_lotteryId);
     }
 
     function draw(string calldata _lotteryId) external override onlyOperatorOrTrigger {
-        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
-        if (_isTrigger()) {
-            require(
-                (currentRoundId != 0) && rounds[currentRoundId].status == RoundStatus.Close,
-                "ERROR_NOT_TIME_DRAW_LOTTERY"
-            );
-        }
-        // get randomResult generated by ChainLink's fallback
-        uint32[] memory winningNumbers = randomGenerator.getRandomResult(currentRoundId);
-        // check winning numbers is valid or not
-        require(_isValidNumbers(winningNumbers, _lotteryId), "ERROR_INVALID_WINNING_NUMBERS");
-        rounds[currentRoundId].status = RoundStatus.Draw;
-        rounds[currentRoundId].winningNumbers = winningNumbers;
-        for (uint i; i < winningNumbers.length; i++) {
-            rounds[currentRoundId].winningNumberPerIndexed[i] = winningNumbers[i];
-        }
-        // Emit round Draw
-        emit RoundDraw(currentRoundIdPerLottery[_lotteryId], winningNumbers);
+        _draw(_lotteryId);
     }
 
     function reward(string calldata _lotteryId) external override onlyOperatorOrTrigger {
-        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
-        if (_isTrigger()) {
-            require(
-                (currentRoundId != 0) && rounds[currentRoundId].status == RoundStatus.Draw,
-                "ERROR_NOT_TIME_REWARD_LOTTERY"
-            );
-        }
-        // Set round status to reward
-        rounds[currentRoundId].status = RoundStatus.Reward;
-        rounds[currentRoundId].endTime = block.timestamp;
-        // Estimate
-        (uint256 amountTreasury, uint256 amountInject, uint256 rewardAmount) = _estimateReward(
-            _lotteryId,
-            currentRoundId
-        );
-        uint256 outRewardValue = _findWinnersAndReward(_lotteryId, currentRoundId, rewardAmount);
-        amountInject += outRewardValue;
-        amountInjectNextRoundPerLottery[_lotteryId] = amountInject;
-        // Transfer token to treasury address
-        token.safeTransfer(treasuryAddress, amountTreasury);
-        // Emit round Draw
-        emit RoundReward(currentRoundId, amountTreasury, amountInject, block.timestamp);
+        _reward(_lotteryId);
     }
 
     function injectFunds(uint256 _roundId, uint256 _amount) external onlyOwner {
@@ -310,18 +200,8 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         return roundIds;
     }
 
-    function getRound(uint256 _roundId) external view override returns (RoundView memory roundView) {
-        Round storage round = rounds[_roundId];
-        roundView = RoundView({
-            lotteryId: round.lotteryId,
-            winningNumbers: round.winningNumbers,
-            endTime: round.endTime,
-            openTime: round.openTime,
-            totalAmount: round.totalAmount,
-            totalTickets: round.totalTickets,
-            firstRoundId: round.firstRoundId,
-            status: round.status
-        });
+    function getRound(uint256 _roundId) external view override returns (Round memory) {
+        return rounds[_roundId];
     }
 
     function getTicketsLength() external view override returns (uint256) {
@@ -333,16 +213,16 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     }
 
     function getTicket(uint256 _ticketId) external view override returns (TicketView memory ticketResult) {
-        Ticket storage ticket = tickets[_ticketId];
+        (bool isWin, uint winRewardRule, uint256 winAmount) = _checkWinTicket(_ticketId);
         ticketResult = TicketView({
-            ticketId: ticket.ticketId,
-            numbers: ticket.numbers,
-            owner: ticket.owner,
-            roundId: ticket.roundId,
-            winStatus: ticket.winStatus,
-            winRewardRule: ticket.winRewardRule,
-            winAmount: roundRewardsBreakdown[ticket.roundId][ticket.winRewardRule],
-            clamStatus: ticket.clamStatus
+            ticketId: tickets[_ticketId].ticketId,
+            numbers: tickets[_ticketId].numbers,
+            owner: tickets[_ticketId].owner,
+            roundId: tickets[_ticketId].roundId,
+            winStatus: isWin,
+            winRewardRule: winRewardRule,
+            winAmount: winAmount,
+            clamStatus: tickets[_ticketId].clamStatus
         });
     }
 
@@ -383,6 +263,203 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         );
 
         lotteries[_lotteryId] = _lottery;
+    }
+
+    function _addRewardRules(string calldata _lotteryId, Rule[] calldata _rules) internal {
+        require(_rules.length > 0, "ERROR_INVALID_RULES");
+        for (uint i; i < _rules.length; i++) {
+            require(_rules[i].matchNumber > 0, "ERROR_INVALID_RULE_MATCH_NUMBER");
+            require(_rules[i].rewardValue > 0, "ERROR_INVALID_RULE_REWARD_VALUE");
+            rulesPerLotteryId[_lotteryId][_rules[i].matchNumber] = _rules[i];
+            emit NewRewardRule(_rules[i].matchNumber, _lotteryId, _rules[i]);
+        }
+    }
+
+    function _open(string calldata _lotteryId) internal {
+        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
+        if (_isTrigger()) {
+            require(
+                ((currentRoundId == 0) || (rounds[currentRoundId].status == RoundStatus.Reward)),
+                "ERROR_NOT_TIME_OPEN_LOTTERY"
+            );
+        }
+        // Increment current round id of lottery to one
+        counterRoundId.increment();
+        uint256 nextRoundId = counterRoundId.current();
+        // Keep track lottery id and round id
+        require(nextRoundId > currentRoundIdPerLottery[_lotteryId], "ERROR_ROUND_ID_LESS_THAN_CURRENT");
+        currentRoundIdPerLottery[_lotteryId] = nextRoundId;
+        // Create new round
+        uint256 totalAmount = amountInjectNextRoundPerLottery[_lotteryId];
+        Round storage round = rounds[nextRoundId];
+        round.lotteryId = _lotteryId;
+        round.firstRoundId = currentRoundId;
+        round.winningNumbers = new uint32[](lotteries[_lotteryId].numberOfItems);
+        round.openTime = block.timestamp;
+        round.totalAmount = totalAmount;
+        round.status = RoundStatus.Open;
+
+        roundIds.push(nextRoundId);
+        // Reset amount injection for next round
+        amountInjectNextRoundPerLottery[_lotteryId] = 0;
+        // Emit round open
+        emit RoundOpen(nextRoundId, _lotteryId, totalAmount, block.timestamp, currentRoundId);
+    }
+
+    function _close(string calldata _lotteryId) internal {
+        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
+        if (_isTrigger()) {
+            require(
+                (currentRoundId != 0) && rounds[currentRoundId].status == RoundStatus.Open,
+                "ERROR_NOT_TIME_CLOSE_LOTTERY"
+            );
+        }
+        rounds[currentRoundId].status = RoundStatus.Close;
+        // Request new random number
+        Lottery storage lottery = lotteries[_lotteryId];
+        randomGenerator.requestRandomNumbers(
+            currentRoundId,
+            lottery.numberOfItems,
+            lottery.minValuePerItem,
+            lottery.maxValuePerItem
+        );
+        // Emit round close
+        emit RoundClose(currentRoundId, rounds[currentRoundId].totalAmount, rounds[currentRoundId].totalTickets);
+    }
+
+    function _draw(string calldata _lotteryId) internal {
+        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
+        if (_isTrigger()) {
+            require(
+                (currentRoundId != 0) && rounds[currentRoundId].status == RoundStatus.Close,
+                "ERROR_NOT_TIME_DRAW_LOTTERY"
+            );
+        }
+        // get randomResult generated by ChainLink's fallback
+        uint32[] memory winningNumbers = randomGenerator.getRandomResult(currentRoundId);
+        // check winning numbers is valid or not
+        require(_isValidNumbers(winningNumbers, _lotteryId), "ERROR_INVALID_WINNING_NUMBERS");
+        rounds[currentRoundId].status = RoundStatus.Draw;
+        rounds[currentRoundId].winningNumbers = winningNumbers;
+        // Emit round Draw
+        emit RoundDraw(currentRoundIdPerLottery[_lotteryId], winningNumbers);
+    }
+
+    function _reward(string calldata _lotteryId) internal {
+        uint256 currentRoundId = currentRoundIdPerLottery[_lotteryId];
+        Round storage round = rounds[currentRoundId];
+        if (_isTrigger()) {
+            require((currentRoundId != 0) && round.status == RoundStatus.Draw, "ERROR_NOT_TIME_REWARD_LOTTERY");
+        }
+        // Set round status to reward
+        round.status = RoundStatus.Reward;
+        round.endTime = block.timestamp;
+        // Estimate
+        (uint256 amountTreasury, uint256 amountInject, uint256 rewardAmount) = _estimateReward(
+            _lotteryId,
+            currentRoundId
+        );
+
+        uint256 outRewardValue = _calcluateRewardsBreakdown(_lotteryId, currentRoundId, rewardAmount);
+
+        amountInject += outRewardValue;
+        amountInjectNextRoundPerLottery[_lotteryId] = amountInject;
+        // Transfer token to treasury address
+        token.safeTransfer(treasuryAddress, amountTreasury);
+        // Emit round Draw
+        emit RoundReward(currentRoundId, amountTreasury, amountInject, block.timestamp);
+    }
+
+    function _buyTickets(OrderTicket[] calldata _ordersTicket) internal {
+        // check list tickets is emptyidx
+        require(_ordersTicket.length != 0, "ERROR_TICKETS_EMPTY");
+        OrderTicketResult[] memory ordersResult = new OrderTicketResult[](_ordersTicket.length);
+        // calculate total price to pay to this contract
+        uint256 amountToTransfer;
+        OrderTicketResult memory orderTicketResult;
+        for (uint orderIdx; orderIdx < _ordersTicket.length; orderIdx++) {
+            orderTicketResult = _processOrder(_ordersTicket[orderIdx]);
+            amountToTransfer += orderTicketResult.orderAmount;
+            ordersResult[orderIdx] = orderTicketResult;
+        }
+        // transfer tokens to this contract
+        token.safeTransferFrom(address(msg.sender), address(this), amountToTransfer);
+        emit MultiRoundsTicketsPurchase(msg.sender, ordersResult);
+    }
+
+    function _claimTickets(uint256[] calldata _ticketIds) internal {
+        require(_ticketIds.length != 0, "ERROR_TICKETS_EMPTY");
+        // Initializes the rewardAmountToTransfer
+        uint256 rewardAmountToTransfer;
+        Ticket storage ticket;
+        for (uint i; i < _ticketIds.length; i++) {
+            // Check ticket valid to claim reward
+            ticket = tickets[_ticketIds[i]];
+            (bool isWin, uint winRewardRule, uint256 winAmount) = _checkWinTicket(_ticketIds[i]);
+            require(ticket.owner == msg.sender, "ERROR_ONLY_OWNER");
+            require(isWin, "ERROR_TICKET_NOT_WIN");
+            require(!ticket.clamStatus, "ERROR_ONLY_CLAIM_PRIZE_ONCE");
+
+            // Set claim status to true value
+            ticket.clamStatus = true;
+
+            rewardAmountToTransfer += winAmount;
+        }
+        // Transfer money to msg.sender
+        token.safeTransfer(msg.sender, rewardAmountToTransfer);
+        emit TicketsClaim(msg.sender, rewardAmountToTransfer, _ticketIds);
+    }
+
+    function _calcluateRewardsBreakdown(
+        string calldata _lotteryId,
+        uint256 _roundId,
+        uint256 rewardAmount
+    ) internal returns (uint256 outRewardValue) {
+        outRewardValue = rewardAmount;
+
+        Round storage round = rounds[_roundId];
+        Lottery storage lottery = lotteries[_lotteryId];
+        Subsets.Result[] memory subsets = _calculateArraySubsets(round.winningNumbers);
+
+        uint[] memory winnersPerRule = new uint[](lottery.numberOfItems + 1);
+        for (uint i; i < subsets.length; ) {
+            uint subsetLength = subsets[i].length;
+            if (
+                roundTicketsSubsetCouter[_roundId][subsets[i].hash] > 0 &&
+                rulesPerLotteryId[_lotteryId][subsetLength].rewardValue > 0
+            ) {
+                winnersPerRule[subsetLength] += roundTicketsSubsetCouter[_roundId][subsets[i].hash];
+                if (subsetLength == lottery.numberOfItems) {
+                    for (uint j = lottery.numberOfItems - 1; j > 0; ) {
+                        if (winnersPerRule[j] >= (subsetLength - 1)) {
+                            winnersPerRule[j] -= (subsetLength - 1);
+                        }
+                        unchecked {
+                            j--;
+                        }
+                    }
+                }
+            }
+            unchecked {
+                i++;
+            }
+        }
+
+        for (uint ruleIndex; ruleIndex < winnersPerRule.length; ruleIndex++) {
+            uint winnerPerRule = winnersPerRule[ruleIndex];
+            if (winnerPerRule > 0) {
+                uint256 rewardAmountPerRule = _calculateRewardAmountPerRule(_lotteryId, ruleIndex, rewardAmount);
+                outRewardValue -= rewardAmountPerRule;
+                uint256 rewardAmountPerTicket = rewardAmountPerRule.div(winnerPerRule);
+                // console.log(
+                //     "_calcluateRewardsBreakdown index: %s, winnersPerRule: %s, rewardAmountPerTicket: %s",
+                //     ruleIndex,
+                //     winnerPerRule,
+                //     rewardAmountPerTicket
+                // );
+                roundRewardsBreakdown[_roundId][ruleIndex] = rewardAmountPerTicket;
+            }
+        }
     }
 
     function _processOrder(OrderTicket calldata order) internal returns (OrderTicketResult memory orderResult) {
@@ -433,45 +510,38 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         ticket.roundId = _roundId;
         ticket.numbers = _ticketNumbers;
 
-        uint numberLength = _ticketNumbers.length;
-        for (uint i; i < numberLength; i++) {
-            ticket.contains[_ticketNumbers[i]] = true;
+        Subsets.Result[] memory ticketSubsets = _calculateArraySubsets(ticket.numbers);
+        for (uint i; i < ticketSubsets.length; ) {
+            roundTicketsSubsetCouter[ticket.roundId][ticketSubsets[i].hash]++;
+            unchecked {
+                i++;
+            }
         }
-
+        for (uint i; i < _ticketNumbers.length; ) {
+            ticket.contains[_ticketNumbers[i]] = true;
+            unchecked {
+                i++;
+            }
+        }
         ticketIds.push(newTicketId);
         ticketsPerUserId[msg.sender].push(newTicketId);
         ticketsPerRoundId[_roundId].push(newTicketId);
         return newTicketId;
     }
 
-    function _findWinnersAndReward(
-        string calldata _lotteryId,
-        uint256 _roundId,
-        uint256 rewardAmount
-    ) internal returns (uint256 outRewardValue) {
-        outRewardValue = rewardAmount;
-        uint[] memory winnersPerRule = new uint[](lotteries[_lotteryId].numberOfItems + 1);
-        uint ticketLength = ticketsPerRoundId[_roundId].length;
-        for (uint ticketIndex; ticketIndex < ticketLength; ticketIndex++) {
-            uint256 ticketId = ticketsPerRoundId[_roundId][ticketIndex];
-            // Check if this ticket is eligible to win or not
-            (bool isWin, uint matchRewardRule) = _checkIsWinTicket(ticketId, _lotteryId, _roundId);
-            if (isWin) {
-                tickets[ticketId].winStatus = isWin;
-                tickets[ticketId].winRewardRule = matchRewardRule;
-                winnersPerRule[matchRewardRule] += 1;
-            }
-        }
+    Subsets.Subset tmpSubset;
 
-        for (uint ruleIndex; ruleIndex < winnersPerRule.length; ruleIndex++) {
-            uint winnerPerRule = winnersPerRule[ruleIndex];
-            if (winnerPerRule > 0) {
-                uint256 rewardAmountPerRule = _calculateRewardAmountPerRule(_lotteryId, ruleIndex, rewardAmount);
-                outRewardValue -= rewardAmountPerRule;
-                uint256 rewardAmountPerTicket = rewardAmountPerRule.div(winnerPerRule);
-                roundRewardsBreakdown[_roundId][ruleIndex] = rewardAmountPerTicket;
-            }
+    function _calculateArraySubsets(uint32[] memory _array) internal returns (Subsets.Result[] memory subsets) {
+        tmpSubset.array = _array;
+        tmpSubset.getListSumOfSubset(1);
+
+        subsets = tmpSubset.results;
+
+        for (uint i; i < subsets.length; i++) {
+            delete tmpSubset.results[i];
+            delete tmpSubset.exists[subsets[i].hash];
         }
+        delete tmpSubset;
     }
 
     function _estimateReward(
@@ -509,32 +579,34 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         return totalPrice;
     }
 
-    function _checkIsWinTicket(
-        uint256 _ticketId,
-        string calldata _lotteryId,
-        uint256 _roundId
-    ) internal view returns (bool isWin, uint matchRewardRule) {
+    function _checkWinTicket(
+        uint256 _ticketId
+    ) internal view returns (bool isWin, uint winRewardRule, uint256 winAmount) {
+        Ticket storage ticket = tickets[_ticketId];
+
+        // Check if this ticket is eligible to win or not
         uint matchedNumbers;
-        matchedNumbers = _checkMatchTicketNumber(_ticketId, _roundId, 0) ? matchedNumbers + 1 : matchedNumbers;
-        matchedNumbers = _checkMatchTicketNumber(_ticketId, _roundId, 1) ? matchedNumbers + 1 : matchedNumbers;
-        matchedNumbers = _checkMatchTicketNumber(_ticketId, _roundId, 2) ? matchedNumbers + 1 : matchedNumbers;
-        matchedNumbers = _checkMatchTicketNumber(_ticketId, _roundId, 3) ? matchedNumbers + 1 : matchedNumbers;
-        matchedNumbers = _checkMatchTicketNumber(_ticketId, _roundId, 4) ? matchedNumbers + 1 : matchedNumbers;
-        matchedNumbers = _checkMatchTicketNumber(_ticketId, _roundId, 5) ? matchedNumbers + 1 : matchedNumbers;
-
-        if (rulesPerLotteryId[_lotteryId][matchedNumbers].rewardValue > 0) {
-            isWin = true;
-            matchRewardRule = rulesPerLotteryId[_lotteryId][matchedNumbers].matchNumber;
+        Round storage round = rounds[ticket.roundId];
+        uint winingNumbersLength = round.winningNumbers.length;
+        for (uint i; i < winingNumbersLength; ) {
+            uint32 winingNumber = round.winningNumbers[i];
+            if (ticket.contains[winingNumber]) {
+                matchedNumbers++;
+            }
+            unchecked {
+                i++;
+            }
         }
-    }
 
-    function _checkMatchTicketNumber(
-        uint256 _ticketId,
-        uint256 _roundId,
-        uint numberIndex
-    ) internal view returns (bool) {
-        uint32 winNumber = rounds[_roundId].winningNumberPerIndexed[numberIndex];
-        return (winNumber > 0 && tickets[_ticketId].contains[winNumber]);
+        if (matchedNumbers > 0) {
+            Rule storage rule = rulesPerLotteryId[round.lotteryId][matchedNumbers];
+            if (rule.rewardValue > 0) {
+                isWin = true;
+                winRewardRule = matchedNumbers;
+                winAmount = roundRewardsBreakdown[ticket.roundId][winRewardRule];
+                console.log("_checkWinTicket winRewardRule: %s, winAmount: %s", winRewardRule, winAmount);
+            }
+        }
     }
 
     function _calculateRewardAmountPerRule(

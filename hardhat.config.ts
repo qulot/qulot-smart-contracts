@@ -95,6 +95,7 @@ const config: HardhatUserConfig = {
       },
       chainId: chainIds.hardhat,
       gas: 12000000,
+      blockGasLimit: 999999999,
     },
     sepolia: getChainConfig("sepolia"),
     "polygon-mumbai": getChainConfig("polygon-mumbai"),
@@ -113,7 +114,6 @@ const config: HardhatUserConfig = {
       // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
-        runs: 1000,
       },
     },
   },

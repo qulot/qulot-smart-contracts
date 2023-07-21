@@ -30,7 +30,6 @@ struct Round {
     uint256 totalTickets;
     uint256 firstRoundId;
     RoundStatus status;
-    mapping(uint => uint32) winningNumberPerIndexed;
 }
 
 struct RoundView {
@@ -54,8 +53,6 @@ struct Ticket {
     uint32[] numbers;
     address owner;
     uint256 roundId;
-    bool winStatus;
-    uint winRewardRule;
     bool clamStatus;
     mapping(uint32 => bool) contains;
 }

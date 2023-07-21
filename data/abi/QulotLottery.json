@@ -891,8 +891,8 @@
             "type": "uint8"
           }
         ],
-        "internalType": "struct RoundView",
-        "name": "roundView",
+        "internalType": "struct Round",
+        "name": "",
         "type": "tuple"
       }
     ],
@@ -1294,6 +1294,30 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "roundTicketsSubsetCouter",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "name": "rounds",
@@ -1465,16 +1489,6 @@
       {
         "internalType": "uint256",
         "name": "roundId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "winStatus",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint256",
-        "name": "winRewardRule",
         "type": "uint256"
       },
       {
