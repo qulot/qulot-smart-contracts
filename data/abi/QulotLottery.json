@@ -99,11 +99,6 @@
             "internalType": "uint32",
             "name": "discountPercent",
             "type": "uint32"
-          },
-          {
-            "internalType": "uint256",
-            "name": "maxNumberTicketsPerRound",
-            "type": "uint256"
           }
         ],
         "indexed": false,
@@ -244,11 +239,6 @@
             "internalType": "uint32",
             "name": "discountPercent",
             "type": "uint32"
-          },
-          {
-            "internalType": "uint256",
-            "name": "maxNumberTicketsPerRound",
-            "type": "uint256"
           }
         ],
         "indexed": false,
@@ -553,11 +543,6 @@
             "internalType": "uint32",
             "name": "discountPercent",
             "type": "uint32"
-          },
-          {
-            "internalType": "uint256",
-            "name": "maxNumberTicketsPerRound",
-            "type": "uint256"
           }
         ],
         "internalType": "struct Lottery",
@@ -810,11 +795,6 @@
             "internalType": "uint32",
             "name": "discountPercent",
             "type": "uint32"
-          },
-          {
-            "internalType": "uint256",
-            "name": "maxNumberTicketsPerRound",
-            "type": "uint256"
           }
         ],
         "internalType": "struct Lottery",
@@ -1087,11 +1067,6 @@
         "internalType": "uint32",
         "name": "discountPercent",
         "type": "uint32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "maxNumberTicketsPerRound",
-        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1283,30 +1258,6 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "name": "roundTicketsSubsetCouter",
-    "outputs": [
-      {
-        "internalType": "uint32",
-        "name": "",
-        "type": "uint32"
       }
     ],
     "stateMutability": "view",
@@ -1668,11 +1619,6 @@
             "internalType": "uint32",
             "name": "discountPercent",
             "type": "uint32"
-          },
-          {
-            "internalType": "uint256",
-            "name": "maxNumberTicketsPerRound",
-            "type": "uint256"
           }
         ],
         "internalType": "struct Lottery",

@@ -6,7 +6,7 @@ import { parseEther } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 
 import { QulotLottery } from "../types";
-import { LotteryStruct } from "../types/contracts/QulotLottery";
+import { LotteryStruct, RuleStruct } from "../types/contracts/QulotLottery";
 import { bulkRandomRange } from "../utils/number";
 
 describe("contracts/QulotLottery", function () {
@@ -19,18 +19,28 @@ describe("contracts/QulotLottery", function () {
     periodDays: ["1", "2", "3", "4", "5", "6"],
     periodHourOfDays: "24",
     maxNumberTicketsPerBuy: "4",
-    maxNumberTicketsPerRound: "10",
     pricePerTicket: parseEther("1"),
     treasuryFeePercent: "10",
     amountInjectNextRoundPercent: "10",
     discountPercent: "10",
   };
 
+  const lotteryLiteQRules: RuleStruct[] = [
+    {
+      matchNumber: 3,
+      rewardValue: 70,
+    },
+    {
+      matchNumber: 2,
+      rewardValue: 30,
+    },
+  ];
+
   async function deployQulotLotteryFixture() {
     const totalInitSupply = parseEther("10000");
 
     // Contracts are deployed using the first signer/account by default
-    const [owner, treasury, operator, trigger, other, lisa, rose] = await ethers.getSigners();
+    const [owner, treasury, operator, trigger, other, lisa, rose, bob, micky, rick] = await ethers.getSigners();
 
     // Mock erc20 token
     const token = await (await ethers.getContractFactory("MockERC20")).deploy("USD Coin", "USDC", totalInitSupply);
@@ -48,10 +58,11 @@ describe("contracts/QulotLottery", function () {
     await qulotLottery.setTriggerAddress(trigger.address);
     await randomNumberGenerator.setQulotLottery(qulotLottery.address);
 
-    await token.connect(lisa).mintTokens(parseEther("10000"));
-    await token.connect(lisa).approve(qulotLottery.address, parseEther("10000"));
-    await token.connect(rose).mintTokens(parseEther("10000"));
-    await token.connect(rose).approve(qulotLottery.address, parseEther("10000"));
+    // Mock account token balance
+    for (const acc of [lisa, rose, bob, micky, rick]) {
+      await token.connect(acc).mintTokens(parseEther("10000"));
+      await token.connect(acc).approve(qulotLottery.address, parseEther("10000"));
+    }
 
     return {
       qulotLottery,
@@ -64,6 +75,9 @@ describe("contracts/QulotLottery", function () {
       other,
       lisa,
       rose,
+      bob,
+      micky,
+      rick,
     };
   }
 
@@ -71,6 +85,7 @@ describe("contracts/QulotLottery", function () {
     qulotLottery: QulotLottery,
     account: SignerWithAddress,
     lottery: LotteryStruct = { ...lotteryLiteQ },
+    rules: RuleStruct[] = [...lotteryLiteQRules],
   ) {
     qulotLottery = await qulotLottery.connect(account);
 
@@ -78,18 +93,7 @@ describe("contracts/QulotLottery", function () {
     await (await qulotLottery.addLottery("liteq", lottery)).wait();
 
     // Add reward rules for liteq
-    await (
-      await qulotLottery.addRewardRules("liteq", [
-        {
-          matchNumber: 3,
-          rewardValue: 70,
-        },
-        {
-          matchNumber: 2,
-          rewardValue: 30,
-        },
-      ])
-    ).wait();
+    await (await qulotLottery.addRewardRules("liteq", rules)).wait();
 
     // Set bulkTicketsDiscountApply
     await (await qulotLottery.setBulkTicketsDiscountApply(1)).wait();
@@ -670,12 +674,168 @@ describe("contracts/QulotLottery", function () {
           ])
         ).wait();
         await qulotLottery.connect(fixture.operator).close("liteq");
-        // Mock winning numbers for lisa jackpot  0,0,0,3,0,0,0,5,0,3,5,0,0,0,20,3,0,20,0,5,20,3,5,20
+        // Mock winning numbers for lisa jackpot
         await fixture.randomNumberGenerator.setRandomResult(currentRoundId, ["3", "5", "20"]);
         await qulotLottery.connect(fixture.operator).draw("liteq");
-        await qulotLottery.connect(fixture.operator).reward("liteq");
+        await (await qulotLottery.connect(fixture.operator).reward("liteq")).wait();
         expect((await qulotLottery.getTicket("1")).winAmount).to.equal(parseEther("2.072"));
         expect((await qulotLottery.getTicket("4")).winAmount).to.equal(parseEther("0.888"));
+      });
+
+      it("Check the win amount when successful reward, lisa and rose win jackpot", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        qulotLottery = await initLottery(qulotLottery, fixture.operator);
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
+        // Lisa by 3 tickets
+        /**
+         * total amount: 3.7
+         * reward amount: total amount - (treasury fee: 10%) - (amount inject: 10%)
+         *    => 3.7 - (3.7 * 10%) - (3.7 * 10%) = 2.96
+         *
+         * Jackpot amount:
+         *    - 2 matched: 0
+         *    - 3 matched: 2
+         *      => reward amount - (reward amount * 70%) / winners
+         *          => 2.96 * 70%) / 2 = 1.036
+         *
+         * Lisa win 1.036, Rose win 1.036
+         */
+        const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
+        await (
+          await qulotLottery.connect(fixture.lisa).buyTickets([
+            {
+              roundId: currentRoundId,
+              tickets: [
+                ["3", "5", "20"],
+                ["7", "19", "52"],
+                ["4", "9", "10"],
+              ],
+            },
+          ])
+        ).wait();
+        await (
+          await qulotLottery.connect(fixture.rose).buyTickets([
+            {
+              roundId: currentRoundId,
+              tickets: [["3", "5", "20"]],
+            },
+          ])
+        ).wait();
+        await qulotLottery.connect(fixture.operator).close("liteq");
+        // Mock winning numbers for lisa jackpot
+        await fixture.randomNumberGenerator.setRandomResult(currentRoundId, ["3", "5", "20"]);
+        await qulotLottery.connect(fixture.operator).draw("liteq");
+        await (await qulotLottery.connect(fixture.operator).reward("liteq")).wait();
+        expect((await qulotLottery.getTicket("1")).winAmount).to.equal(parseEther("1.036"));
+        expect((await qulotLottery.getTicket("4")).winAmount).to.equal(parseEther("1.036"));
+      });
+
+      it("Check the win amount when successful reward, lisa and rose win jackpot, micky and rick win 3th", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        qulotLottery = await initLottery(
+          qulotLottery,
+          fixture.operator,
+          { ...lotteryLiteQ, maxNumberTicketsPerBuy: 5 },
+          [
+            {
+              matchNumber: 3,
+              rewardValue: 50,
+            },
+            {
+              matchNumber: 2,
+              rewardValue: 30,
+            },
+            {
+              matchNumber: 1,
+              rewardValue: 20,
+            },
+          ],
+        );
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
+        // Lisa by 3 tickets = 2.7
+        // Rose by 5 tickets = 4.5
+        // Micky by 1 tickets = 1
+        // Rick by 2 tickets = 1.8
+        /**
+         * total amount: 10
+         * reward amount: total amount - (treasury fee: 10%) - (amount inject: 10%)
+         *    => 10 - (10 * 10%) - (10 * 10%) = 8
+         *
+         * Jackpot amount:
+         *    - 1 matched: 4
+         *      => reward amount - (reward amount * 20%) / winners
+         *          => 8 * 20% / 4 = 0.4
+         *    - 2 matched: 0
+         *    - 3 matched: 2
+         *      => reward amount - (reward amount * 70%) / winners
+         *          => 8 * 50% / 2 = 2
+         *
+         * Lisa win 1.036, Rose win 1.036
+         */
+        const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
+        await qulotLottery.connect(fixture.lisa).buyTickets([
+          {
+            roundId: currentRoundId,
+            tickets: [
+              ["3", "5", "20"], // ==> 3 matched
+              ["7", "19", "52"],
+              ["4", "9", "10"],
+            ],
+          },
+        ]);
+        await qulotLottery.connect(fixture.rose).buyTickets([
+          {
+            roundId: currentRoundId,
+            tickets: [
+              ["3", "5", "20"], // ==> 3 matched
+              ["12", "15", "20"], // ==> 1 matched
+              ["9", "11", "18"],
+              ["7", "8", "19"],
+              ["1", "2", "3"], // ==> 1 matched
+            ],
+          },
+        ]);
+        await (
+          await qulotLottery.connect(fixture.micky).buyTickets([
+            {
+              roundId: currentRoundId,
+              tickets: [["3", "9", "50"]], // ==> 1 matched
+            },
+          ])
+        ).wait();
+        await (
+          await qulotLottery.connect(fixture.rick).buyTickets([
+            {
+              roundId: currentRoundId,
+              tickets: [
+                ["3", "30", "40"], // ==> 1 matched
+                ["11", "12", "13"],
+              ],
+            },
+          ])
+        ).wait();
+        await qulotLottery.connect(fixture.operator).close("liteq");
+        // Mock winning numbers for lisa jackpot
+        await fixture.randomNumberGenerator.setRandomResult(currentRoundId, ["3", "5", "20"]);
+        await qulotLottery.connect(fixture.operator).draw("liteq");
+        await (await qulotLottery.connect(fixture.operator).reward("liteq")).wait();
+        const winJackpotTicketIds = [1, 4];
+        const win3thTicketIds = [5, 8, 9, 10];
+        const ticketLength = (await qulotLottery.getTicketsLength()).toNumber();
+        for (const ticketId of Array.from({ length: ticketLength }, (_, i) => i + 1)) {
+          const ticket = await qulotLottery.getTicket(ticketId);
+          if (winJackpotTicketIds.includes(ticketId)) {
+            expect(ticket.winAmount).to.equal(parseEther("2"));
+            continue;
+          }
+          if (win3thTicketIds.includes(ticketId)) {
+            expect(ticket.winAmount).to.equal(parseEther("0.4"));
+            continue;
+          }
+          expect(ticket.winStatus).to.equal(false);
+        }
       });
 
       // it("Should fail if gas used out 1.5 million unit for 100 tickets", async function () {

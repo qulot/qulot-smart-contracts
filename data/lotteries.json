@@ -9,7 +9,6 @@
     "periodDays": [0, 1, 2, 3, 4, 5, 6],
     "periodHourOfDays": 2,
     "maxNumberTicketsPerBuy": 50,
-    "maxNumberTicketsPerRound": 500,
     "pricePerTicket": 1,
     "treasuryFeePercent": 5,
     "amountInjectNextRoundPercent": 5,
