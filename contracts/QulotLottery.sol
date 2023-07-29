@@ -225,11 +225,14 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         });
     }
 
-    function caculateTotalPriceForBulkTickets(
-        string calldata _lotteryId,
+    function caculateAmountForBulkTickets(
+        uint256 _roundId,
         uint256 _numberTickets
-    ) external view returns (uint256) {
-        return _caculateTotalPriceForBulkTickets(_lotteryId, _numberTickets);
+    ) external view returns (uint256 totalAmount, uint256 finalAmount, uint256 discount) {
+        string storage lotteryId = rounds[_roundId].lotteryId;
+        totalAmount = lotteries[lotteryId].pricePerTicket * _numberTickets;
+        finalAmount = _caculateTotalPriceForBulkTickets(lotteryId, _numberTickets);
+        discount = ((totalAmount.sub(finalAmount)).mul(100)).div(totalAmount);
     }
 
     function _setLottery(string calldata _lotteryId, Lottery calldata _lottery) internal {

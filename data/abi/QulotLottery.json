@@ -645,9 +645,9 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "_lotteryId",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "_roundId",
+        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -655,11 +655,21 @@
         "type": "uint256"
       }
     ],
-    "name": "caculateTotalPriceForBulkTickets",
+    "name": "caculateAmountForBulkTickets",
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "totalAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "finalAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "discount",
         "type": "uint256"
       }
     ],

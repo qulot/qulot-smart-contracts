@@ -7,7 +7,6 @@ import { ethers } from "hardhat";
 
 import { QulotLottery } from "../types";
 import { LotteryStruct, RuleStruct } from "../types/contracts/QulotLottery";
-import { bulkRandomRange } from "../utils/number";
 
 describe("contracts/QulotLottery", function () {
   const lotteryLiteQ: LotteryStruct = {
@@ -731,6 +730,56 @@ describe("contracts/QulotLottery", function () {
         expect((await qulotLottery.getTicket("4")).winAmount).to.equal(parseEther("1.036"));
       });
 
+      it("Check the win amount when successful reward, micky and rick win 3th", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        qulotLottery = await initLottery(qulotLottery, fixture.operator);
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
+        // micky by 3 tickets
+        // rick by 3 tickets
+        /**
+         * total amount: 5.4
+         * reward amount: total amount - (treasury fee: 10%) - (amount inject: 10%)
+         *    => 5.4 - (5.4 * 10%) - (5.4 * 10%) = 4.32
+         *
+         * Jackpot amount:
+         *    - 2 matched: 2
+         *      => reward amount - (reward amount * 70%) / winners
+         *          => 4.32 * 30% / 2 = 0.648
+         *    - 3 matched: 0
+         *
+         * micky win 0.648, rick win 0.648
+         */
+        const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
+        await qulotLottery.connect(fixture.micky).buyTickets([
+          {
+            roundId: currentRoundId,
+            tickets: [
+              ["3", "5", "10"],
+              ["7", "19", "52"],
+              ["4", "9", "10"],
+            ],
+          },
+        ]);
+        await qulotLottery.connect(fixture.rick).buyTickets([
+          {
+            roundId: currentRoundId,
+            tickets: [
+              ["1", "5", "20"],
+              ["1", "2", "3"],
+              ["4", "10", "30"],
+            ],
+          },
+        ]);
+        await qulotLottery.connect(fixture.operator).close("liteq");
+        // Mock winning numbers for lisa jackpot
+        await fixture.randomNumberGenerator.setRandomResult(currentRoundId, ["3", "5", "20"]);
+        await qulotLottery.connect(fixture.operator).draw("liteq");
+        await (await qulotLottery.connect(fixture.operator).reward("liteq")).wait();
+        expect((await qulotLottery.getTicket("1")).winAmount).to.equal(parseEther("0.648"));
+        expect((await qulotLottery.getTicket("4")).winAmount).to.equal(parseEther("0.648"));
+      });
+
       it("Check the win amount when successful reward, lisa and rose win jackpot, micky and rick win 3th", async function () {
         const fixture = await loadFixture(deployQulotLotteryFixture);
         let qulotLottery = fixture.qulotLottery;
@@ -1283,6 +1332,28 @@ describe("contracts/QulotLottery", function () {
 
         // Check lisa claim
         await expect(qulotLottery.connect(fixture.lisa).claimTickets(["1"])).to.emit(qulotLottery, "TicketsClaim");
+      });
+    });
+  });
+
+  describe("caculateAmountForBulkTickets", function () {
+    describe("Data", function () {
+      it("Check caculate total price for bulk tickets ok", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        // Register new lottery first
+        qulotLottery = await initLottery(qulotLottery, fixture.operator);
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
+        const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
+
+        let result = await qulotLottery.caculateAmountForBulkTickets(currentRoundId, 1);
+        expect(result.totalAmount).to.eq(parseEther("1"));
+        expect(result.finalAmount).to.eq(parseEther("1"));
+        expect(result.discount).to.eq(parseEther("0"));
+        result = await qulotLottery.caculateAmountForBulkTickets(currentRoundId, 3);
+        expect(result.totalAmount).to.eq(parseEther("3"));
+        expect(result.finalAmount).to.eq(parseEther("2.7"));
+        expect(result.discount.toNumber()).to.eq(10);
       });
     });
   });
