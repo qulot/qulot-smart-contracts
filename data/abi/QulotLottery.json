@@ -620,6 +620,11 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "_buyer",
+        "type": "address"
+      },
+      {
         "components": [
           {
             "internalType": "uint256",
@@ -881,8 +886,8 @@
             "type": "uint8"
           }
         ],
-        "internalType": "struct Round",
-        "name": "",
+        "internalType": "struct RoundView",
+        "name": "roundResult",
         "type": "tuple"
       }
     ],

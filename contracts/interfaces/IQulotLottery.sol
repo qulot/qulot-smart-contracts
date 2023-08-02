@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { Lottery, Round, Rule, TicketView, OrderTicket } from "../lib/QulotLotteryStructs.sol";
+import { Lottery, RoundView, Rule, TicketView, OrderTicket } from "../lib/QulotLotteryStructs.sol";
 
 interface IQulotLottery {
     /**
@@ -41,10 +41,11 @@ interface IQulotLottery {
     /**
      *
      * @notice Buy tickets for the multi rounds
-     * @param _ordersTicket Rround id
+     * @param _buyer Address of buyer
+     * @param _ordersTicket Round id
      * @dev Callable by users
      */
-    function buyTickets(OrderTicket[] calldata _ordersTicket) external;
+    function buyTickets(address _buyer, OrderTicket[] calldata _ordersTicket) external;
 
     /**
      * @notice Claim a set of winning tickets for a lottery
@@ -103,7 +104,7 @@ interface IQulotLottery {
      * @notice Return round by id
      * @param _roundId Id of round
      */
-    function getRound(uint256 _roundId) external view returns (Round memory round);
+    function getRound(uint256 _roundId) external view returns (RoundView memory round);
 
     /**
      * @notice Return a length of ticket ids
