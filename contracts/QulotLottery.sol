@@ -158,7 +158,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
     }
 
     function injectFunds(uint256 _roundId, uint256 _amount) external onlyOwner {
-        require(rounds[_roundId].status == RoundStatus.Open, "ERROR_ROUND_NOT_OPEN");
+        require(rounds[_roundId].isExists && rounds[_roundId].status == RoundStatus.Open, "ERROR_ROUND_NOT_OPEN");
         token.safeTransferFrom(address(msg.sender), address(this), _amount);
         rounds[_roundId].totalAmount += _amount;
         emit RoundInjection(_roundId, _amount);
@@ -239,13 +239,13 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         });
     }
 
-    function caculateAmountForBulkTickets(
+    function calculateAmountForBulkTickets(
         uint256 _roundId,
         uint256 _numberTickets
     ) external view returns (uint256 totalAmount, uint256 finalAmount, uint256 discount) {
         string storage lotteryId = rounds[_roundId].lotteryId;
         totalAmount = lotteries[lotteryId].pricePerTicket * _numberTickets;
-        finalAmount = _caculateTotalPriceForBulkTickets(lotteryId, _numberTickets);
+        finalAmount = _calculateTotalPriceForBulkTickets(lotteryId, _numberTickets);
         discount = ((totalAmount.sub(finalAmount)).mul(100)).div(totalAmount);
     }
 
@@ -321,6 +321,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         round.openTime = block.timestamp;
         round.totalAmount = totalAmount;
         round.status = RoundStatus.Open;
+        round.isExists = true;
 
         roundIds.push(nextRoundId);
         // Reset amount injection for next round
@@ -511,12 +512,15 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         // check list tickets is emptyidx
         require(_order.tickets.length != 0, "ERROR_TICKETS_EMPTY");
         // check round is open
-        require(rounds[_order.roundId].status == RoundStatus.Open, "ERROR_ROUND_IS_CLOSED");
+        require(
+            rounds[_order.roundId].isExists && rounds[_order.roundId].status == RoundStatus.Open,
+            "ERROR_ROUND_IS_CLOSED"
+        );
         // check limit ticket
         string storage lotteryId = rounds[_order.roundId].lotteryId;
         require(_order.tickets.length <= lotteries[lotteryId].maxNumberTicketsPerBuy, "ERROR_TICKETS_LIMIT");
         // calculate total price to pay to this contract
-        uint256 amountToTransfer = _caculateTotalPriceForBulkTickets(lotteryId, _order.tickets.length);
+        uint256 amountToTransfer = _calculateTotalPriceForBulkTickets(lotteryId, _order.tickets.length);
         // increment the total amount collected for the round
         rounds[_order.roundId].totalAmount += amountToTransfer;
         rounds[_order.roundId].totalTickets += _order.tickets.length;
@@ -599,7 +603,7 @@ contract QulotLottery is ReentrancyGuard, IQulotLottery, Ownable {
         return true;
     }
 
-    function _caculateTotalPriceForBulkTickets(
+    function _calculateTotalPriceForBulkTickets(
         string memory _lotteryId,
         uint256 _numberTickets
     ) internal view returns (uint256) {

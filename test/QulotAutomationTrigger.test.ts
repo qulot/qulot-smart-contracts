@@ -81,4 +81,24 @@ describe("contracts/QulotAutomationTrigger", function () {
       });
     });
   });
+
+  describe("removeTriggerJob", function () {
+    describe("Data", function () {
+      it("Remove trigger job is successful", async function () {
+        const { qulotAutomationTrigger, operatorAccount } = await loadFixture(deployQulotAutomationTriggerFixture);
+
+        // Register new lottery first
+        await qulotAutomationTrigger
+          .connect(operatorAccount)
+          .addTriggerJob("liteq:open", "liteq", "5 17 * * 0,1,2,3,4,5,6", "0");
+
+        // Register new lottery first
+        await qulotAutomationTrigger.connect(operatorAccount).removeTriggerJob("liteq:open");
+
+        expect(await qulotAutomationTrigger.getJobIds()).to.not.includes("liteq:open");
+        const triggerLiteQOpen = await qulotAutomationTrigger.getJob("liteq:open");
+        expect(triggerLiteQOpen.isExists).to.equal(false);
+      });
+    });
+  });
 });

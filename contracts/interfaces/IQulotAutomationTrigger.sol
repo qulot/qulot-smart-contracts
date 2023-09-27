@@ -23,4 +23,10 @@ interface IQulotAutomationTrigger {
      * @param _qulotLottery: address of the Qulot lottery
      */
     function setQulotLottery(address _qulotLottery) external;
+
+    /**
+     * @notice Remove trigger job
+     * @param _jobId Id of cron job
+     */
+    function removeTriggerJob(string memory _jobId) external;
 }

@@ -30,6 +30,7 @@ struct Round {
     uint256 firstRoundId;
     RoundStatus status;
     mapping(uint32 => bool) contains;
+    bool isExists;
 }
 
 struct RoundView {

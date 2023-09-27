@@ -971,6 +971,22 @@ describe("contracts/QulotLottery", function () {
           ]),
         ).to.revertedWith("ERROR_ROUND_IS_CLOSED");
       });
+      it("Should fail if round is larger than current", async function () {
+        const fixture = await loadFixture(deployQulotLotteryFixture);
+        let qulotLottery = fixture.qulotLottery;
+        // Register new lottery first
+        qulotLottery = await initLottery(qulotLottery, fixture.operator);
+        qulotLottery = await openLottery(qulotLottery, fixture.operator);
+        const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
+        await expect(
+          qulotLottery.connect(fixture.lisa).buyTickets(fixture.lisa.address, [
+            {
+              roundId: currentRoundId.add(BigNumber.from(1)),
+              tickets: [["1", "3", "4"]],
+            },
+          ]),
+        ).to.revertedWith("ERROR_ROUND_IS_CLOSED");
+      });
       it("Should fail if tickets empty", async function () {
         const fixture = await loadFixture(deployQulotLotteryFixture);
         let qulotLottery = fixture.qulotLottery;
@@ -1119,9 +1135,8 @@ describe("contracts/QulotLottery", function () {
               },
             ])
           ).wait()
-        ).events?.find((evt) => evt.event === "MultiRoundsTicketsPurchase")
-        const ticketIds = txnLogMultiRoundsTicketsPurchase?.args?.ordersResult[0]
-          .ticketIds as BigNumber[];
+        ).events?.find((evt) => evt.event === "MultiRoundsTicketsPurchase");
+        const ticketIds = txnLogMultiRoundsTicketsPurchase?.args?.ordersResult[0].ticketIds as BigNumber[];
         for (const ticketId of ticketIds) {
           const ticket = await qulotLottery.getTicket(ticketId);
           expect(ticket.owner).equal(fixture.rose.address);
@@ -1322,9 +1337,9 @@ describe("contracts/QulotLottery", function () {
     });
   });
 
-  describe("caculateAmountForBulkTickets", function () {
+  describe("calculateAmountForBulkTickets", function () {
     describe("Data", function () {
-      it("Check caculate total price for bulk tickets ok", async function () {
+      it("Check calculate total price for bulk tickets ok", async function () {
         const fixture = await loadFixture(deployQulotLotteryFixture);
         let qulotLottery = fixture.qulotLottery;
         // Register new lottery first
@@ -1332,11 +1347,11 @@ describe("contracts/QulotLottery", function () {
         qulotLottery = await openLottery(qulotLottery, fixture.operator);
         const currentRoundId = await qulotLottery.currentRoundIdPerLottery("liteq");
 
-        let result = await qulotLottery.caculateAmountForBulkTickets(currentRoundId, 1);
+        let result = await qulotLottery.calculateAmountForBulkTickets(currentRoundId, 1);
         expect(result.totalAmount).to.eq(parseEther("1"));
         expect(result.finalAmount).to.eq(parseEther("1"));
         expect(result.discount).to.eq(parseEther("0"));
-        result = await qulotLottery.caculateAmountForBulkTickets(currentRoundId, 3);
+        result = await qulotLottery.calculateAmountForBulkTickets(currentRoundId, 3);
         expect(result.totalAmount).to.eq(parseEther("3"));
         expect(result.finalAmount).to.eq(parseEther("2.7"));
         expect(result.discount.toNumber()).to.eq(10);

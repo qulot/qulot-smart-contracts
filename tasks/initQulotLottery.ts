@@ -56,7 +56,6 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
           minValuePerItem: lottery.minValuePerItem,
           maxValuePerItem: lottery.maxValuePerItem,
           maxNumberTicketsPerBuy: lottery.maxNumberTicketsPerBuy,
-          maxNumberTicketsPerRound: lottery.maxNumberTicketsPerRound,
           amountInjectNextRoundPercent: lottery.amountInjectNextRoundPercent,
           periodDays: lottery.periodDays,
           periodHourOfDays: lottery.periodHourOfDays,
@@ -83,6 +82,16 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
       console.log(
         `[${new Date().toISOString()}] network=${network.name} message='Add rules #${inspect(addRewardRulesTx)}' hash=${
           addRewardRulesTx?.hash
+        } signer=${operator.address}`,
+      );
+
+      const openLotteryTx = await qulotLottery.open(lottery.id, {
+        gasLimit: 500000,
+        gasPrice: gasPrice.mul(2),
+      });
+      console.log(
+        `[${new Date().toISOString()}] network=${network.name} message='First time open lottery #${inspect(openLotteryTx)}' hash=${
+          openLotteryTx?.hash
         } signer=${operator.address}`,
       );
     }

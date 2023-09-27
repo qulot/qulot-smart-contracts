@@ -660,7 +660,7 @@
         "type": "uint256"
       }
     ],
-    "name": "caculateAmountForBulkTickets",
+    "name": "calculateAmountForBulkTickets",
     "outputs": [
       {
         "internalType": "uint256",
@@ -1322,6 +1322,11 @@
         "internalType": "enum RoundStatus",
         "name": "status",
         "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "isExists",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",

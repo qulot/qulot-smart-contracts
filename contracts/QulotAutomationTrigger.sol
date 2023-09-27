@@ -18,6 +18,7 @@ string constant ERROR_INVALID_JOB_ID = "ERROR_INVALID_JOB_ID";
 string constant ERROR_INVALID_LOTTERY_ID = "ERROR_INVALID_LOTTERY_ID";
 string constant ERROR_INVALID_JOB_CRON_SPEC = "ERROR_INVALID_JOB_CRON_SPEC";
 string constant ERROR_TRIGGER_JOB_ALREADY_EXISTS = "ERROR_TRIGGER_JOB_ALREADY_EXISTS";
+string constant ERROR_TRIGGER_JOB_NOT_FOUND = "ERROR_TRIGGER_JOB_NOT_FOUND";
 
 contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatibleInterface, Ownable {
     using Counters for Counters.Counter;
@@ -27,6 +28,7 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
     error TickTooOld();
     error TickDoesntMatchSpec();
     event NewTriggerJob(string jobId, string lotteryId, JobType jobType, string cronSpec);
+    event RemoveTriggerJob(string jobId);
     event PerformTriggerJob(string jobId, uint256 timestamp, JobStatus status);
 
     IQulotLottery public qulotLottery;
@@ -86,11 +88,12 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
      */
     function checkInRange(uint start, uint end) private view returns (bool, bytes memory) {
         string memory id;
-        uint256 timestamp = _removeTimestampSeconds(block.timestamp);
+        uint256 lastTick;
         for (uint256 idx = start; idx < end; idx++) {
             id = jobIds[idx];
-            if (specs[id].matches(timestamp)) {
-                return (true, abi.encode(id));
+            lastTick = specs[id].lastTick();
+            if (lastTick > lastRuns[id]) {
+                return (true, abi.encode(id, lastTick));
             }
         }
         return (false, bytes(""));
@@ -106,7 +109,17 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
      * validated against the contract's current state.
      */
     function performUpkeep(bytes calldata performData) external override {
-        string memory jobId = abi.decode(performData, (string));
+        (string memory jobId, uint256 tickTime) = abi.decode(performData, (string, uint256));
+        tickTime = _removeTimestampSeconds(tickTime); // remove seconds from tick time
+        if (block.timestamp < tickTime) {
+            revert TickInFuture();
+        }
+        if (tickTime <= lastRuns[jobId]) {
+            revert TickTooOld();
+        }
+        if (!Cron.matches(specs[jobId], tickTime)) {
+            revert TickDoesntMatchSpec();
+        }
         excuteJob(jobId);
     }
 
@@ -157,6 +170,28 @@ contract QulotAutomationTrigger is IQulotAutomationTrigger, AutomationCompatible
         lastRuns[_jobId] = block.timestamp;
 
         emit NewTriggerJob(_jobId, _lotteryId, _jobType, _jobCronSpec);
+    }
+
+    /**
+     * @notice Remove trigger job
+     * @param _jobId Id of cron job
+     * @dev Callable by operator
+     */
+    function removeTriggerJob(string memory _jobId) external override onlyOperator {
+        require(!String.isEmpty(_jobId), ERROR_INVALID_JOB_ID);
+        require(jobs[_jobId].isExists, ERROR_TRIGGER_JOB_NOT_FOUND);
+
+        delete jobs[_jobId];
+        delete specs[_jobId];
+
+        for (uint i = 0; i < jobIds.length; i++) {
+            if (String.compareStrings(_jobId, jobIds[i])) {
+                delete jobIds[i];
+            }
+        }
+        delete lastRuns[_jobId];
+
+        emit RemoveTriggerJob(_jobId);
     }
 
     /**
