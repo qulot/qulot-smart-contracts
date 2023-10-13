@@ -1,6 +1,6 @@
 import cronTime from "cron-time-generator";
 import { BigNumber } from "ethers";
-import { task } from "hardhat/config";
+import { task, types } from "hardhat/config";
 import type { TaskArguments } from "hardhat/types";
 import { inspect } from "util";
 
@@ -56,7 +56,7 @@ function getJobCronSpec(periodDays: number[], periodHourOfDays: number, jobType:
 task("init:QulotAutomationTrigger", "First init data for QulotAutomationTrigger after deployed")
   .addParam("address", "Qulot automation trigger contract address")
   .addParam("qulot", "Qulot lottery contract address")
-  .addOptionalParam("new", "First time init QulotAutomationTrigger", true)
+  .addOptionalParam("new", "First time init QulotAutomationTrigger", true, types.boolean)
   .setAction(async function (taskArguments: TaskArguments, { ethers, network }) {
     // Get operator signer
     const [owner, operator] = await ethers.getSigners();

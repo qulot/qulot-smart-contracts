@@ -1,5 +1,5 @@
 import { parseUnits } from "ethers/lib/utils";
-import { task } from "hardhat/config";
+import { task, types } from "hardhat/config";
 import type { TaskArguments } from "hardhat/types";
 import { inspect } from "util";
 
@@ -10,7 +10,7 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
   .addParam("address", "Qulot lottery contract address")
   .addParam("random", "Qulot random number generator contract address")
   .addParam("automation", "Qulot automation trigger contract address")
-  .addOptionalParam("new", "First time init QulotLottery", true)
+  .addOptionalParam("new", "First time init QulotLottery", true, types.boolean)
   .setAction(async function (taskArguments: TaskArguments, { ethers, network }) {
     // Get operator signer
     const [owner, operator] = await ethers.getSigners();
