@@ -56,6 +56,7 @@ function getJobCronSpec(periodDays: number[], periodHourOfDays: number, jobType:
 task("init:QulotAutomationTrigger", "First init data for QulotAutomationTrigger after deployed")
   .addParam("address", "Qulot automation trigger contract address")
   .addParam("qulot", "Qulot lottery contract address")
+  .addOptionalParam("new", "First time init QulotAutomationTrigger", true)
   .setAction(async function (taskArguments: TaskArguments, { ethers, network }) {
     // Get operator signer
     const [owner, operator] = await ethers.getSigners();
@@ -70,15 +71,19 @@ task("init:QulotAutomationTrigger", "First init data for QulotAutomationTrigger 
       operator,
     );
 
-    const setQulotLotteryAddressTx = await qulotAutomationTrigger.connect(owner).setQulotLottery(taskArguments.qulot, {
-      gasLimit: 500000,
-      gasPrice: gasPrice.mul(2),
-    });
-    console.log(
-      `[${new Date().toISOString()}] network=${network.name} message='Set qulot lottery address #${
-        taskArguments.qulot
-      }' hash=${setQulotLotteryAddressTx?.hash} signer=${owner.address}`,
-    );
+    if (taskArguments.new) {
+      const setQulotLotteryAddressTx = await qulotAutomationTrigger
+        .connect(owner)
+        .setQulotLottery(taskArguments.qulot, {
+          gasLimit: 500000,
+          gasPrice: gasPrice.mul(2),
+        });
+      console.log(
+        `[${new Date().toISOString()}] network=${network.name} message='Set qulot lottery address #${
+          taskArguments.qulot
+        }' hash=${setQulotLotteryAddressTx?.hash} signer=${owner.address}`,
+      );
+    }
 
     const qulotLottery = await ethers.getContractAt("QulotLottery", taskArguments.qulot);
     const lotteryIds = await qulotLottery.getLotteryIds();

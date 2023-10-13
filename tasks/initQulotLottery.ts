@@ -10,6 +10,7 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
   .addParam("address", "Qulot lottery contract address")
   .addParam("random", "Qulot random number generator contract address")
   .addParam("automation", "Qulot automation trigger contract address")
+  .addOptionalParam("new", "First time init QulotLottery", true)
   .setAction(async function (taskArguments: TaskArguments, { ethers, network }) {
     // Get operator signer
     const [owner, operator] = await ethers.getSigners();
@@ -25,24 +26,26 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
     // Fetch token info
     console.log(`Qulot lottery using token: ${tokenSymbol}, decimals: ${tokenDecimals}`);
 
-    const setRandomGeneratorTx = await qulotLottery.connect(owner).setRandomGenerator(taskArguments.random, {
-      gasLimit: 500000,
-      gasPrice: gasPrice.mul(2),
-    });
-    console.log(
-      `[${new Date().toISOString()}] network=${network.name} message='Set random generator contract address #${
-        taskArguments.random
-      }' hash=${setRandomGeneratorTx?.hash} signer=${owner.address}`,
-    );
-    const setAutomationTriggerTx = await qulotLottery.connect(owner).setTriggerAddress(taskArguments.automation, {
-      gasLimit: 500000,
-      gasPrice: gasPrice.mul(2),
-    });
-    console.log(
-      `[${new Date().toISOString()}] network=${network.name} message='Set automation trigger contract address #${
-        taskArguments.automation
-      }' hash=${setAutomationTriggerTx?.hash} signer=${owner.address}`,
-    );
+    if (taskArguments.new) {
+      const setRandomGeneratorTx = await qulotLottery.connect(owner).setRandomGenerator(taskArguments.random, {
+        gasLimit: 500000,
+        gasPrice: gasPrice.mul(2),
+      });
+      console.log(
+        `[${new Date().toISOString()}] network=${network.name} message='Set random generator contract address #${
+          taskArguments.random
+        }' hash=${setRandomGeneratorTx?.hash} signer=${owner.address}`,
+      );
+      const setAutomationTriggerTx = await qulotLottery.connect(owner).setTriggerAddress(taskArguments.automation, {
+        gasLimit: 500000,
+        gasPrice: gasPrice.mul(2),
+      });
+      console.log(
+        `[${new Date().toISOString()}] network=${network.name} message='Set automation trigger contract address #${
+          taskArguments.automation
+        }' hash=${setAutomationTriggerTx?.hash} signer=${owner.address}`,
+      );
+    }
 
     const lotteries = lotteriesInitData as Lottery[];
     for (const lottery of lotteries) {
@@ -90,9 +93,9 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
         gasPrice: gasPrice.mul(2),
       });
       console.log(
-        `[${new Date().toISOString()}] network=${network.name} message='First time open lottery #${inspect(openLotteryTx)}' hash=${
-          openLotteryTx?.hash
-        } signer=${operator.address}`,
+        `[${new Date().toISOString()}] network=${network.name} message='First time open lottery #${inspect(
+          openLotteryTx,
+        )}' hash=${openLotteryTx?.hash} signer=${operator.address}`,
       );
     }
   });

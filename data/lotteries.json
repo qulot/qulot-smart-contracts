@@ -23,5 +23,42 @@
         "rewardValue": 40
       }
     ]
+  },
+  {
+    "id": "powerq",
+    "verboseName": "PowerQ",
+    "picture": "https://qulot.infura-ipfs.io/ipfs/QmNZaZTA8i2vuXDdumxRPvLsuuYpM85rzxb2uC97odzmjz",
+    "numberOfItems": 6,
+    "minValuePerItem": 1,
+    "maxValuePerItem": 55,
+    "periodDays": [2, 4, 6],
+    "periodHourOfDays": 3,
+    "maxNumberTicketsPerBuy": 100,
+    "pricePerTicket": 1,
+    "treasuryFeePercent": 10,
+    "amountInjectNextRoundPercent": 10,
+    "discountPercent": 10,
+    "rewardRules": [
+      {
+        "matchNumber": 6,
+        "rewardUnit": 0,
+        "rewardValue": 40
+      },
+      {
+        "matchNumber": 5,
+        "rewardUnit": 0,
+        "rewardValue": 30
+      },
+      {
+        "matchNumber": 4,
+        "rewardUnit": 0,
+        "rewardValue": 20
+      },
+      {
+        "matchNumber": 3,
+        "rewardUnit": 0,
+        "rewardValue": 10
+      }
+    ]
   }
 ]
