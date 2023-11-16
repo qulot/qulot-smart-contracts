@@ -235,6 +235,25 @@ describe("contracts/QulotLottery", function () {
         expect(liteq).to.an("array").that.includes("https://cdn.qulot.io/img/product-megaq.png");
         expect(await qulotLottery.getLotteryIds()).to.includes("liteq");
       });
+
+      it("Will successful if update lottery", async function () {
+        const { qulotLottery, operator } = await loadFixture(deployQulotLotteryFixture);
+
+        // Register new lottery first
+        await ((await qulotLottery.connect(operator).addLottery("liteq", { ...lotteryLiteQ })).wait());
+        let liteq = await qulotLottery.getLottery("liteq");
+        expect(liteq).to.an("array").that.includes("LiteQ");
+        expect(liteq.pricePerTicket).to.equal(parseEther("1"));
+
+        // Update lottery
+        await (await qulotLottery.connect(operator).addLottery("liteq", { 
+          ...lotteryLiteQ,
+          pricePerTicket: parseEther("2")
+        })).wait();
+
+        liteq = await qulotLottery.getLottery("liteq");
+        expect(liteq.pricePerTicket).to.equal(parseEther("2"));
+      });
     });
 
     describe("Events", function () {

@@ -77,25 +77,26 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
           addLotteryTx?.hash
         } signer=${operator.address}`,
       );
+      if (taskArguments.new) {
+        const addRewardRulesTx = await qulotLottery.addRewardRules(lottery.id, lottery.rewardRules, {
+          gasLimit: 500000,
+          gasPrice: gasPrice.mul(2),
+        });
+        console.log(
+          `[${new Date().toISOString()}] network=${network.name} message='Add rules #${inspect(
+            addRewardRulesTx,
+          )}' hash=${addRewardRulesTx?.hash} signer=${operator.address}`,
+        );
 
-      const addRewardRulesTx = await qulotLottery.addRewardRules(lottery.id, lottery.rewardRules, {
-        gasLimit: 500000,
-        gasPrice: gasPrice.mul(2),
-      });
-      console.log(
-        `[${new Date().toISOString()}] network=${network.name} message='Add rules #${inspect(addRewardRulesTx)}' hash=${
-          addRewardRulesTx?.hash
-        } signer=${operator.address}`,
-      );
-
-      const openLotteryTx = await qulotLottery.open(lottery.id, {
-        gasLimit: 500000,
-        gasPrice: gasPrice.mul(2),
-      });
-      console.log(
-        `[${new Date().toISOString()}] network=${network.name} message='First time open lottery #${inspect(
-          openLotteryTx,
-        )}' hash=${openLotteryTx?.hash} signer=${operator.address}`,
-      );
+        const openLotteryTx = await qulotLottery.open(lottery.id, {
+          gasLimit: 500000,
+          gasPrice: gasPrice.mul(2),
+        });
+        console.log(
+          `[${new Date().toISOString()}] network=${network.name} message='First time open lottery #${inspect(
+            openLotteryTx,
+          )}' hash=${openLotteryTx?.hash} signer=${operator.address}`,
+        );
+      }
     }
   });
