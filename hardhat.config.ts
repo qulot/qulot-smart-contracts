@@ -1,10 +1,11 @@
 import "@nomicfoundation/hardhat-toolbox";
 import { config as dotenvConfig } from "dotenv";
+import { ethers } from "ethers";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "hardhat-gas-reporter";
 import type { HardhatUserConfig } from "hardhat/config";
-import type { NetworkUserConfig } from "hardhat/types";
+import type { HardhatNetworkAccountsUserConfig, HttpNetworkAccountsUserConfig, NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 import "solidity-coverage";
 
@@ -45,7 +46,33 @@ const chainIds = {
   "polygon-mumbai": 80001,
 };
 
-function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
+type ChainKeys = keyof typeof chainIds;
+
+function getChainAccountsConfig(
+  chain: ChainKeys,
+): HardhatNetworkAccountsUserConfig | HttpNetworkAccountsUserConfig | null {
+  const ownerPrivateKey = getEnvByNetwork("OWNER_PRIVATE_KEY", chain);
+  const operatorPrivateKey = getEnvByNetwork("OPERATOR_PRIVATE_KEY", chain);
+  const treasuryPrivateKey = getEnvByNetwork("TREASURY_PRIVATE_KEY", chain);
+
+  if (ownerPrivateKey && operatorPrivateKey && treasuryPrivateKey) {
+    return [`0x${ownerPrivateKey}`, `0x${operatorPrivateKey}`, `0x${treasuryPrivateKey}`];
+  }
+
+  const ownerMnemonic = getEnvByNetwork("OWNER_MNEMONIC", chain);
+  const operatorMnemonic = getEnvByNetwork("OPERATOR_MNEMONIC", chain);
+  const treasuryMnemonic = getEnvByNetwork("TREASURY_MNEMONIC", chain);
+  if (ownerMnemonic && operatorMnemonic && treasuryMnemonic) {
+    const owner = ethers.Wallet.fromMnemonic(ownerMnemonic);
+    const operator = ethers.Wallet.fromMnemonic(operatorMnemonic);
+    const treasury = ethers.Wallet.fromMnemonic(treasuryMnemonic);
+    return [owner.privateKey, operator.privateKey, treasury.privateKey];
+  }
+
+  return null;
+}
+
+function getChainConfig(chain: ChainKeys): NetworkUserConfig {
   let jsonRpcUrl: string;
   switch (chain) {
     case "bsc":
@@ -64,11 +91,9 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
     url: jsonRpcUrl,
   };
 
-  const ownerPrivateKey = getEnvByNetwork("OWNER_PRIVATE_KEY", chain);
-  const operatorPrivateKey = getEnvByNetwork("OPERATOR_PRIVATE_KEY", chain);
-  const treasuryPrivateKey = getEnvByNetwork("TREASURY_PRIVATE_KEY", chain);
-  if (ownerPrivateKey && operatorPrivateKey && treasuryPrivateKey) {
-    networkUserConfig.accounts = [`0x${ownerPrivateKey}`, `0x${operatorPrivateKey}`, `0x${treasuryPrivateKey}`];
+  const networkUserAccounts = getChainAccountsConfig(chain);
+  if (networkUserAccounts) {
+    networkUserConfig.accounts = networkUserAccounts;
   }
 
   return networkUserConfig;
@@ -84,6 +109,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       sepolia: etherScanApiKey,
+      polygon: polygonScanApiKey,
       polygonMumbai: polygonScanApiKey,
       bsc: bnbChainScanApiKey,
     },
@@ -97,9 +123,8 @@ const config: HardhatUserConfig = {
       gas: 12000000,
       blockGasLimit: 999999999,
     },
-    sepolia: getChainConfig("sepolia"),
+    "polygon-mainnet": getChainConfig("polygon-mainnet"),
     "polygon-mumbai": getChainConfig("polygon-mumbai"),
-    bsc: getChainConfig("bsc"),
   },
   paths: {
     artifacts: "./artifacts",

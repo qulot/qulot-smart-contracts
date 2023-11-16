@@ -58,10 +58,10 @@ contract QulotLuckyNumberGenerator is ChainlinkClient, IRandomNumberGenerator, O
      * Once the lottery contract is deployed, setLotteryAddress must be called.
      * https://docs.chain.link/docs/vrf-contracts/
      */
-    constructor(address chainlinkTokenAddress, address chainlinkOracleAddress) {
+    constructor(address chainlinkTokenAddress, address chainlinkOracleAddress, uint chainlinkFee) {
         setChainlinkToken(chainlinkTokenAddress);
         oracle = chainlinkOracleAddress;
-        fee = ((0 * LINK_DIVISIBILITY) / 100); // 0,1 * 10**18 (Varies by network and job)
+        fee = ((0 * LINK_DIVISIBILITY) / chainlinkFee); // 0,1 * 10**18 (Varies by network and job)
         apiKey = randomString(20);
     }
 

@@ -1,33 +1,8 @@
 [
   {
-    "id": "liteq",
-    "verboseName": "LiteQ",
-    "picture": "https://qulot.infura-ipfs.io/ipfs/QmTXoPm8KbH8mBjsACRwncwC3S5i9fTNLSddArHL2SeZT5",
-    "numberOfItems": 3,
-    "minValuePerItem": 1,
-    "maxValuePerItem": 66,
-    "periodDays": [0, 1, 2, 3, 4, 5, 6],
-    "periodHourOfDays": 2,
-    "maxNumberTicketsPerBuy": 50,
-    "pricePerTicket": 1,
-    "treasuryFeePercent": 5,
-    "amountInjectNextRoundPercent": 5,
-    "discountPercent": 10,
-    "rewardRules": [
-      {
-        "matchNumber": 3,
-        "rewardValue": 60
-      },
-      {
-        "matchNumber": 2,
-        "rewardValue": 40
-      }
-    ]
-  },
-  {
     "id": "powerq",
     "verboseName": "PowerQ",
-    "picture": "https://qulot.infura-ipfs.io/ipfs/QmNZaZTA8i2vuXDdumxRPvLsuuYpM85rzxb2uC97odzmjz",
+    "picture": "https://qulot.infura-ipfs.io/ipfs/QmYqPMQfEBETuFD4tr4T7UudefARE9AWfbXyn1HGcMFkwe",
     "numberOfItems": 6,
     "minValuePerItem": 1,
     "maxValuePerItem": 55,

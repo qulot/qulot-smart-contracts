@@ -11,11 +11,16 @@ task("deploy:QulotLuckyNumberGenerator", "Deploy the Qulot random number generat
 ) {
   const linkTokenAddress = getEnvByNetwork("LINK_TOKEN_ADDRESS", network.name);
   const oracleAddress = getEnvByNetwork("ORACLE_ADDRESS", network.name);
-  if (linkTokenAddress && oracleAddress) {
+  const linkGetBytesJobFee = getEnvByNetwork("LINK_GET_BYTES_JOB_FEE", network.name);
+  if (linkTokenAddress && oracleAddress && linkGetBytesJobFee) {
     // Deploy ChainLink random number contract
     console.warn("Trying deploy QulotLuckyNumberGenerator contract...");
     const QulotLuckyNumberGenerator = await ethers.getContractFactory("QulotLuckyNumberGenerator");
-    const qulotLuckyNumberGenerator = await QulotLuckyNumberGenerator.deploy(linkTokenAddress, oracleAddress);
+    const qulotLuckyNumberGenerator = await QulotLuckyNumberGenerator.deploy(
+      linkTokenAddress,
+      oracleAddress,
+      parseInt(linkGetBytesJobFee),
+    );
     await qulotLuckyNumberGenerator.deployTransaction.wait(WAIT_CONFIRMATION_BLOCKS);
     console.log(`QulotLuckyNumberGenerator deployed to: ${qulotLuckyNumberGenerator.address}`);
 
@@ -26,12 +31,13 @@ task("deploy:QulotLuckyNumberGenerator", "Deploy the Qulot random number generat
     console.log(`Trying verify QulotLuckyNumberGenerator contract to: ${qulotLuckyNumberGenerator.address}`);
     await run("verify:verify", {
       address: qulotLuckyNumberGenerator.address,
-      constructorArguments: [linkTokenAddress, oracleAddress],
+      constructorArguments: [linkTokenAddress, oracleAddress, parseInt(linkGetBytesJobFee)],
     });
   } else {
     console.error(`Invalid environment variable for network deployment: ${network.name}`, {
       linkTokenAddress,
       oracleAddress,
+      linkGetBytesJobFee,
     });
   }
 });

@@ -32,7 +32,7 @@ task("init:QulotLuckyNumberGenerator", "First init data for QulotLuckyNumberGene
       }' hash=${setQulotLotteryAddressTx?.hash} signer=${owner.address}`,
     );
 
-    const jobId = getEnvByNetwork("JOB_ID", network.name);
+    const jobId = getEnvByNetwork("LINK_JOB_ID", network.name);
     if (jobId) {
       const setJobIdTx = await qulotLuckyNumberGenerator
         .connect(owner)
