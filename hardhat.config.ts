@@ -36,6 +36,7 @@ if (!infuraApiKey) {
 const etherScanApiKey = process.env.ETHERSCAN_API_KEY || "";
 const polygonScanApiKey = process.env.POLYGONSCAN_API_KEY || "";
 const bnbChainScanApiKey = process.env.BNBCHAIN_API_KEY || "";
+const arbiScanApiKey = process.env.ARBISCAN_API_KEY || "";
 const reportGas = process.env.REPORT_GAS ? true : false;
 
 const chainIds = {
@@ -44,6 +45,7 @@ const chainIds = {
   hardhat: 31337,
   "polygon-mainnet": 137,
   "polygon-mumbai": 80001,
+  "arbitrum-mainnet": 42161,
 };
 
 type ChainKeys = keyof typeof chainIds;
@@ -112,6 +114,7 @@ const config: HardhatUserConfig = {
       polygon: polygonScanApiKey,
       polygonMumbai: polygonScanApiKey,
       bsc: bnbChainScanApiKey,
+      arbitrumOne: arbiScanApiKey,
     },
   },
   networks: {
@@ -125,6 +128,7 @@ const config: HardhatUserConfig = {
     },
     "polygon-mainnet": getChainConfig("polygon-mainnet"),
     "polygon-mumbai": getChainConfig("polygon-mumbai"),
+    "arbitrum-mainnet": getChainConfig("arbitrum-mainnet"),
   },
   paths: {
     artifacts: "./artifacts",
