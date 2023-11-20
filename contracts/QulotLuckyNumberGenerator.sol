@@ -61,7 +61,7 @@ contract QulotLuckyNumberGenerator is ChainlinkClient, IRandomNumberGenerator, O
     constructor(address chainlinkTokenAddress, address chainlinkOracleAddress, uint chainlinkFee) {
         setChainlinkToken(chainlinkTokenAddress);
         oracle = chainlinkOracleAddress;
-        fee = ((0 * LINK_DIVISIBILITY) / chainlinkFee); // 0,1 * 10**18 (Varies by network and job)
+        fee = ((chainlinkFee * LINK_DIVISIBILITY) / 100); // n * 10**18 (Varies by network and job)
         apiKey = randomString(20);
     }
 

@@ -49,35 +49,36 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
 
     const lotteries = lotteriesInitData as Lottery[];
     for (const lottery of lotteries) {
-      console.log(`Add lottery id: ${lottery.id}`);
-      const addLotteryTx = await qulotLottery.addLottery(
-        lottery.id,
-        {
-          verboseName: lottery.verboseName,
-          picture: lottery.picture,
-          numberOfItems: lottery.numberOfItems,
-          minValuePerItem: lottery.minValuePerItem,
-          maxValuePerItem: lottery.maxValuePerItem,
-          maxNumberTicketsPerBuy: lottery.maxNumberTicketsPerBuy,
-          amountInjectNextRoundPercent: lottery.amountInjectNextRoundPercent,
-          periodDays: lottery.periodDays,
-          periodHourOfDays: lottery.periodHourOfDays,
-          pricePerTicket: parseUnits(lottery.pricePerTicket.toString(), tokenDecimals),
-          treasuryFeePercent: lottery.treasuryFeePercent,
-          discountPercent: lottery.discountPercent,
-        },
-        {
-          gasLimit: 500000,
-          gasPrice: gasPrice.mul(2),
-        },
-      );
-
-      console.log(
-        `[${new Date().toISOString()}] network=${network.name} message='Add lottery #${lottery.id}' hash=${
-          addLotteryTx?.hash
-        } signer=${operator.address}`,
-      );
       if (taskArguments.new) {
+        console.log(`Add lottery id: ${lottery.id}`);
+        const addLotteryTx = await qulotLottery.addLottery(
+          lottery.id,
+          {
+            verboseName: lottery.verboseName,
+            picture: lottery.picture,
+            numberOfItems: lottery.numberOfItems,
+            minValuePerItem: lottery.minValuePerItem,
+            maxValuePerItem: lottery.maxValuePerItem,
+            maxNumberTicketsPerBuy: lottery.maxNumberTicketsPerBuy,
+            amountInjectNextRoundPercent: lottery.amountInjectNextRoundPercent,
+            periodDays: lottery.periodDays,
+            periodHourOfDays: lottery.periodHourOfDays,
+            pricePerTicket: parseUnits(lottery.pricePerTicket.toString(), tokenDecimals),
+            treasuryFeePercent: lottery.treasuryFeePercent,
+            discountPercent: lottery.discountPercent,
+          },
+          {
+            gasLimit: 500000,
+            gasPrice: gasPrice.mul(2),
+          },
+        );
+
+        console.log(
+          `[${new Date().toISOString()}] network=${network.name} message='Add lottery #${lottery.id}' hash=${
+            addLotteryTx?.hash
+          } signer=${operator.address}`,
+        );
+
         const addRewardRulesTx = await qulotLottery.addRewardRules(lottery.id, lottery.rewardRules, {
           gasLimit: 500000,
           gasPrice: gasPrice.mul(2),
@@ -96,6 +97,35 @@ task("init:QulotLottery", "First init data for Qulot lottery after deployed")
           `[${new Date().toISOString()}] network=${network.name} message='First time open lottery #${inspect(
             openLotteryTx,
           )}' hash=${openLotteryTx?.hash} signer=${operator.address}`,
+        );
+      } else {
+        console.log(`Update lottery id: ${lottery.id}`);
+        const updateLotteryTx = await qulotLottery.updateLottery(
+          lottery.id,
+          {
+            verboseName: lottery.verboseName,
+            picture: lottery.picture,
+            numberOfItems: lottery.numberOfItems,
+            minValuePerItem: lottery.minValuePerItem,
+            maxValuePerItem: lottery.maxValuePerItem,
+            maxNumberTicketsPerBuy: lottery.maxNumberTicketsPerBuy,
+            amountInjectNextRoundPercent: lottery.amountInjectNextRoundPercent,
+            periodDays: lottery.periodDays,
+            periodHourOfDays: lottery.periodHourOfDays,
+            pricePerTicket: parseUnits(lottery.pricePerTicket.toString(), tokenDecimals),
+            treasuryFeePercent: lottery.treasuryFeePercent,
+            discountPercent: lottery.discountPercent,
+          },
+          {
+            gasLimit: 500000,
+            gasPrice: gasPrice.mul(2),
+          },
+        );
+
+        console.log(
+          `[${new Date().toISOString()}] network=${network.name} message='Update lottery #${lottery.id}' hash=${
+            updateLotteryTx?.hash
+          } signer=${operator.address}`,
         );
       }
     }
